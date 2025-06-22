@@ -1,5 +1,4 @@
 #!/bin/bash
-set -e
 
 CPU="./a.out"  # your decoder binary
 ASM_DIR="asm"
@@ -8,6 +7,8 @@ mkdir -p "$TMP_DIR"
 
 PASSED=0
 FAILED=0
+
+echo "$ASM_DIR"/*.asm
 
 for ASM_FILE in "$ASM_DIR"/*.asm; do
     NAME=$(basename "$ASM_FILE" .asm)
