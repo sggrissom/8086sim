@@ -1,0 +1,17 @@
+name: Test 8086 Simulation
+
+on: [push, pull_request]
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 🧾 Checkout code
+        uses: actions/checkout@v3
+
+      - name: 🧰 Install NASM
+        run: sudo apt update && sudo apt install -y nasm
+
+      - name: 🧪 Run tests
+        run: bash test_sim.sh
