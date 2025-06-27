@@ -15,6 +15,13 @@ FAILED=0
 
 echo "$ASM_DIR"/*.asm
 
+strip_comments() {
+    sed -E '/^\s*;/d' "$1" |      # delete lines starting with ;
+    sed -E 's/\s*;.*$//' |       # remove inline comments
+    sed -E '/^\s*$/d'            # delete empty lines
+}
+
+
 for ASM_FILE in "$ASM_DIR"/*.asm; do
     NAME=$(basename "$ASM_FILE" .asm)
     BIN_FILE="$TMP_DIR/${NAME}.bin"
@@ -41,12 +48,8 @@ for ASM_FILE in "$ASM_DIR"/*.asm; do
         ((FAILED++))
 
         # Show diff if failed
-        echo "--- Original ($BIN_FILE)"
-        xxd "$BIN_FILE" > "$TMP_DIR/${NAME}_orig.hex"
-        echo "--- Regenerated ($REGEN_FILE)"
-        xxd "$REGEN_FILE" > "$TMP_DIR/${NAME}_regen.hex"
+        colordiff -u <(strip_comments "$ASM_FILE") "$OUT_ASM" || true
 
-        diff -u "$TMP_DIR/${NAME}_orig.hex" "$TMP_DIR/${NAME}_regen.hex" || true
     fi
 done
 
