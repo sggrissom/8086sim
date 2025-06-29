@@ -48,8 +48,9 @@ for ASM_FILE in "$ASM_DIR"/*.asm; do
     else
         echo "❌ FAIL: $NAME"
         ((FAILED++))
-
-        if [[ "$CI" ]]; then
+        if [[ -n "$CI" ]]; then
+          echo "skip diff"
+        else
             # Show diff if failed
             colordiff -u <(strip_comments "$ASM_FILE") "$OUT_ASM" || true
         fi
