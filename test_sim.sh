@@ -1,4 +1,5 @@
 #!/bin/bash
+set -e
 
 CPU_SRC="8086sim.cpp"
 CPU_BIN="./8086sim"
@@ -9,6 +10,7 @@ mkdir -p "$TMP_DIR"
 echo "🔧 Building sim from $CPU_SRC..."
 g++ "$CPU_SRC" -o "$CPU_BIN"
 
+set +e
 
 PASSED=0
 FAILED=0
@@ -47,10 +49,11 @@ for ASM_FILE in "$ASM_DIR"/*.asm; do
         echo "❌ FAIL: $NAME"
         ((FAILED++))
 
-        # Show diff if failed
-        colordiff -u <(strip_comments "$ASM_FILE") "$OUT_ASM" || true
-
-    fi
+        if [[ "$CI" ]]; then
+            # Show diff if failed
+            colordiff -u <(strip_comments "$ASM_FILE") "$OUT_ASM" || true
+        fi
+fi
 done
 
 echo ""
@@ -58,3 +61,4 @@ echo "=== Summary ==="
 echo "Passed: $PASSED"
 echo "Failed: $FAILED"
 
+exit $FAILED
