@@ -33,6 +33,17 @@ unsigned int get_immediate(unsigned char w_bit, FILE* file) {
   return dest;
 }
 
+short get_displacement(unsigned char w_bit, FILE* file) {
+  short dest = fgetc(file);
+  if (w_bit) {
+    short next_byte = fgetc(file);
+    dest = (next_byte << 8) | dest;
+  } else if (dest & 0x80) {
+    dest |= 0xFF00;
+  }
+  return dest;
+}
+
 void print_move_immediate_to_register(unsigned char opcode_byte, FILE* file) {
   unsigned char w_bit = get_bit(opcode_byte , 3);
   unsigned char reg = get_bits(opcode_byte, 0, 2);
@@ -41,6 +52,37 @@ void print_move_immediate_to_register(unsigned char opcode_byte, FILE* file) {
   const char* source = register_file[reg + 8*w_bit];
 
   printf("mov %s, %d\n", source, dest);
+}
+
+void print_move_immediate_to_register_memory(unsigned char opcode_byte, FILE* file) {
+  unsigned char byte = (unsigned char)fgetc(file);
+  unsigned char w_bit = get_bit(opcode_byte , 0);
+  unsigned char mod = get_bits(byte, 6, 7);
+  unsigned char rm = get_bits(byte, 0, 2);
+  short displacement = 0;
+
+  char source[20] = {};
+
+  const char* address = effective_address[rm];
+
+  if (mod == 0b01) {
+    displacement = get_displacement(0, file);
+  } else if (mod == 0b10) {
+    displacement = get_displacement(1, file);
+  }
+  if (displacement != 0) {
+    sprintf(source, "[%s + %hd]", address, displacement);
+  } else {
+    sprintf(source, "[%s]", address);
+  }
+
+  unsigned int immediate = get_immediate(w_bit, file);
+
+  if (w_bit) {
+    printf("mov %s, word %d\n", source, immediate);
+  } else {
+    printf("mov %s, byte %d\n", source, immediate);
+  }
 }
 
 void print_move_instruction(unsigned char opcode_byte, FILE* file) {
@@ -54,7 +96,7 @@ void print_move_instruction(unsigned char opcode_byte, FILE* file) {
 
   char source[20] = {};
   char dest[20] = {};
-  unsigned int immediate = 0;
+  short displacement = 0;
 
   if (mod == 0b11) {
     strcpy(source, register_file[rm + 8*w_bit]);
@@ -67,18 +109,21 @@ void print_move_instruction(unsigned char opcode_byte, FILE* file) {
 
   strcpy(source, register_file[reg + 8*w_bit]);
   if (rm == 0b110 && mod == 0b00) {
-    //unsigned char dest = (unsigned char)fgetc(file);
-    //printf("mov %s, %u\n", source, dest);
+    unsigned int immediate = get_immediate(w_bit, file);
+    printf("mov %s, [%d]\n", source, immediate);
+    return;
   } else {
     address = effective_address[rm];
   }
   if (mod == 0b01) {
-    immediate = get_immediate(0, file);
+    displacement = get_displacement(0, file);
   } else if (mod == 0b10) {
-    immediate = get_immediate(1, file);
+    displacement = get_displacement(1, file);
   }
-  if (immediate > 0) {
-    sprintf(dest, "[%s + %d]", address, immediate);
+  if (displacement > 0) {
+    sprintf(dest, "[%s + %hd]", address, displacement);
+  } else if (displacement < 0) {
+    sprintf(dest, "[%s - %hd]", address, -displacement);
   } else {
     sprintf(dest, "[%s]", address);
   }
@@ -88,6 +133,18 @@ void print_move_instruction(unsigned char opcode_byte, FILE* file) {
   } else {
     printf("mov %s, %s\n", source, dest);
   }
+}
+
+void print_move_memory_to_accumulator(unsigned char opcode_byte, FILE* file) {
+  unsigned char w_bit = get_bit(opcode_byte , 0);
+  unsigned int immediate = get_immediate(w_bit, file);
+  printf("mov ax, [%d]\n", immediate);
+}
+
+void print_move_accumulator_to_memory(unsigned char opcode_byte, FILE* file) {
+  unsigned char w_bit = get_bit(opcode_byte , 0);
+  unsigned int immediate = get_immediate(w_bit, file);
+  printf("mov [%d], ax\n", immediate);
 }
 
 int main(int argc, char* argv[]) {
@@ -113,8 +170,17 @@ int main(int argc, char* argv[]) {
         if (get_bits(byte, 2, 7) == 0b100010) {
           print_move_instruction(byte, file);
         }
-        if (get_bits(byte, 4, 7) == 0b1011) {
+        else if (get_bits(byte, 4, 7) == 0b1011) {
           print_move_immediate_to_register(byte, file);
+        }
+        else if (get_bits(byte, 1, 7) == 0b1100011) {
+          print_move_immediate_to_register_memory(byte, file);
+        }
+        else if (get_bits(byte, 1, 7) == 0b1010000) {
+          print_move_memory_to_accumulator(byte, file);
+        }
+        else if (get_bits(byte, 1, 7) == 0b1010001) {
+          print_move_accumulator_to_memory(byte, file);
         }
     }
 
