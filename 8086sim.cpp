@@ -19,16 +19,20 @@ u8 get_bit(u8 byte, u8 num) {
 }
 
 const char* register_file[16] = {
-    "al", "cl", "dl", "bl",
-    "ah", "ch", "dh", "bh",
-    "ax", "cx", "dx", "bx",
-    "sp", "bp", "si", "di",
+  "al", "cl", "dl", "bl",
+  "ah", "ch", "dh", "bh",
+  "ax", "cx", "dx", "bx",
+  "sp", "bp", "si", "di",
 };
 
 const char* effective_address[8] = {
-    "bx + si", "bx + di", "bp + si", "bp + di",
-    "si", "di", "bp", "bx",
+  "bx + si", "bx + di", "bp + si", "bp + di",
+  "si", "di", "bp", "bx",
 };
+
+const char* get_register(u8 reg, u8 w_bit) {
+  return register_file[reg + 8*w_bit];
+}
 
 u16 get_immediate(u8 w_bit, FILE* file) {
   u16 dest = (u8)fgetc(file);
@@ -50,17 +54,17 @@ i16 get_displacement(u8 w_bit, FILE* file) {
   return dest;
 }
 
-void print_move_immediate_to_register(u8 opcode_byte, FILE* file) {
+void immediate_to_register(char* instruction, u8 opcode_byte, FILE* file) {
   u8 w_bit = get_bit(opcode_byte , 3);
   u8 reg = get_bits(opcode_byte, 0, 2);
 
   u16 dest = get_immediate(w_bit, file);
-  const char* source = register_file[reg + 8*w_bit];
+  const char* source = get_register(reg, w_bit);
 
-  printf("mov %s, %d\n", source, dest);
+  sprintf(instruction + strlen(instruction), " %s, %d", source, dest);
 }
 
-void print_move_immediate_to_register_memory(u8 opcode_byte, FILE* file) {
+void immediate_to_register_memory(char* instruction, u8 opcode_byte, FILE* file) {
   u8 byte = (u8)fgetc(file);
   u8 w_bit = get_bit(opcode_byte , 0);
   u8 mod = get_bits(byte, 6, 7);
@@ -85,13 +89,13 @@ void print_move_immediate_to_register_memory(u8 opcode_byte, FILE* file) {
   u16 immediate = get_immediate(w_bit, file);
 
   if (w_bit) {
-    printf("mov %s, word %d\n", source, immediate);
+    sprintf(instruction + strlen(instruction), " %s, word %d", source, immediate);
   } else {
-    printf("mov %s, byte %d\n", source, immediate);
+    sprintf(instruction + strlen(instruction), " %s, byte %d", source, immediate);
   }
 }
 
-void print_move_instruction(u8 opcode_byte, FILE* file) {
+void register_to_register(char *instruction, u8 opcode_byte, FILE* file) {
   u8 byte = (u8)fgetc(file);
 
   u8 w_bit = get_bit(opcode_byte , 0);
@@ -105,18 +109,18 @@ void print_move_instruction(u8 opcode_byte, FILE* file) {
   short displacement = 0;
 
   if (mod == 0b11) {
-    strcpy(source, register_file[rm + 8*w_bit]);
-    strcpy(dest, register_file[reg + 8*w_bit]);
-    printf("mov %s, %s\n", source, dest);
+    strcpy(source, get_register(rm, w_bit));
+    strcpy(dest, get_register(reg, w_bit));
+    sprintf(instruction + strlen(instruction), " %s, %s", source, dest);
     return;
   }
 
   const char* address;
 
-  strcpy(source, register_file[reg + 8*w_bit]);
+  strcpy(source, get_register(reg, w_bit));
   if (rm == 0b110 && mod == 0b00) {
-    unsigned int immediate = get_immediate(w_bit, file);
-    printf("mov %s, [%d]\n", source, immediate);
+    u16 immediate = get_immediate(w_bit, file);
+    sprintf(instruction + strlen(instruction), " %s, [%d]", source, immediate);
     return;
   } else {
     address = effective_address[rm];
@@ -135,62 +139,90 @@ void print_move_instruction(u8 opcode_byte, FILE* file) {
   }
 
   if (d_bit == 0b0) {
-    printf("mov %s, %s\n", dest, source);
+    sprintf(instruction + strlen(instruction), " %s, %s", dest, source);
   } else {
-    printf("mov %s, %s\n", source, dest);
+    sprintf(instruction + strlen(instruction), " %s, %s", source, dest);
   }
 }
 
-void print_move_memory_to_accumulator(u8 opcode_byte, FILE* file) {
+void memory_to_accumulator(char* instruction, u8 opcode_byte, FILE* file) {
   u8 w_bit = get_bit(opcode_byte , 0);
   u16 immediate = get_immediate(w_bit, file);
-  printf("mov ax, [%d]\n", immediate);
+  sprintf(instruction + strlen(instruction), " ax, [%d]", immediate);
 }
 
-void print_move_accumulator_to_memory(u8 opcode_byte, FILE* file) {
+void accumulator_to_memory(char* instruction, u8 opcode_byte, FILE* file) {
   u8 w_bit = get_bit(opcode_byte , 0);
   u16 immediate = get_immediate(w_bit, file);
-  printf("mov [%d], ax\n", immediate);
+  sprintf(instruction + strlen(instruction), " [%d], ax", immediate);
+}
+
+void move_register_to_register(char* instruction, u8 opcode_byte, FILE* file) {
+  sprintf(instruction, "mov");
+  register_to_register(instruction, opcode_byte, file);
+}
+
+void move_memory_to_accumulator(char* instruction, u8 opcode_byte, FILE* file) {
+  sprintf(instruction, "mov");
+  memory_to_accumulator(instruction, opcode_byte, file);
+}
+
+void move_accumulator_to_memory(char* instruction, u8 opcode_byte, FILE* file) {
+  sprintf(instruction, "mov");
+  accumulator_to_memory(instruction, opcode_byte, file);
+}
+
+void move_immediate_to_register(char* instruction, u8 opcode_byte, FILE* file) {
+  sprintf(instruction, "mov");
+  immediate_to_register(instruction, opcode_byte, file);
+}
+
+void move_immediate_to_register_memory(char* instruction, u8 opcode_byte, FILE* file) {
+  sprintf(instruction, "mov");
+  immediate_to_register_memory(instruction, opcode_byte, file);
 }
 
 int main(int argc, char* argv[]) {
-    if (argc < 2) {
-        printf("Usage: %s <filename>\n", argv[0]);
-        return 1;
+  if (argc < 2) {
+    printf("Usage: %s <filename>\n", argv[0]);
+    return 1;
+  }
+
+  const char* filename = argv[1];
+  FILE* file = fopen(filename, "rb");
+
+  if (!file) {
+    perror("Error opening file");
+    return 1;
+  }
+
+  printf("bits 16\n");
+
+  i8 ch;
+  char instruction[128] = {};
+  while ((ch = fgetc(file)) != EOF) {
+    u8 byte = (u8)ch;
+
+    if (get_bits(byte, 2, 7) == 0b100010) {
+      move_register_to_register(instruction, byte, file);
+    }
+    else if (get_bits(byte, 4, 7) == 0b1011) {
+      move_immediate_to_register(instruction, byte, file);
+    }
+    else if (get_bits(byte, 1, 7) == 0b1100011) {
+      move_immediate_to_register_memory(instruction, byte, file);
+    }
+    else if (get_bits(byte, 1, 7) == 0b1010000) {
+      move_memory_to_accumulator(instruction, byte, file);
+    }
+    else if (get_bits(byte, 1, 7) == 0b1010001) {
+      move_accumulator_to_memory(instruction, byte, file);
     }
 
-    const char* filename = argv[1];
-    FILE* file = fopen(filename, "rb");
+    printf("%s\n", instruction);
+  }
 
-    if (!file) {
-        perror("Error opening file");
-        return 1;
-    }
-
-    printf("bits 16\n");
-
-    i8 ch;
-    while ((ch = fgetc(file)) != EOF) {
-        u8 byte = (u8)ch;
-
-        if (get_bits(byte, 2, 7) == 0b100010) {
-          print_move_instruction(byte, file);
-        }
-        else if (get_bits(byte, 4, 7) == 0b1011) {
-          print_move_immediate_to_register(byte, file);
-        }
-        else if (get_bits(byte, 1, 7) == 0b1100011) {
-          print_move_immediate_to_register_memory(byte, file);
-        }
-        else if (get_bits(byte, 1, 7) == 0b1010000) {
-          print_move_memory_to_accumulator(byte, file);
-        }
-        else if (get_bits(byte, 1, 7) == 0b1010001) {
-          print_move_accumulator_to_memory(byte, file);
-        }
-    }
-
-    fclose(file);
-    return 0;
+  fclose(file);
+  return 0;
 }
 
