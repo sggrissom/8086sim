@@ -1,14 +1,20 @@
 #include <cstdio>
 #include <cstring>
+#include <stdint.h>
 
-unsigned char get_bits(unsigned char byte, int start, int end) {
-  int width = end - start + 1;
-  unsigned char mask = (1 << width) - 1;
-  unsigned char result = (byte >> start) & mask;
+typedef uint8_t u8;
+typedef uint16_t u16;
+typedef int8_t i8;
+typedef int16_t i16;
+
+u8 get_bits(u8 byte, u8 start, u8 end) {
+  u8 width = end - start + 1;
+  u8 mask = (1 << width) - 1;
+  u8 result = (byte >> start) & mask;
   return result;
 }
 
-unsigned char get_bit(unsigned char byte, int num) {
+u8 get_bit(u8 byte, u8 num) {
   return get_bits(byte, num, num);
 }
 
@@ -24,19 +30,19 @@ const char* effective_address[8] = {
     "si", "di", "bp", "bx",
 };
 
-unsigned int get_immediate(unsigned char w_bit, FILE* file) {
-  unsigned int dest = (unsigned char)fgetc(file);
+u16 get_immediate(u8 w_bit, FILE* file) {
+  u16 dest = (u8)fgetc(file);
   if (w_bit) {
-    unsigned int next_byte = (unsigned char)fgetc(file);
+    u8 next_byte = (u8)fgetc(file);
     dest = (next_byte << 8) | dest;
   }
   return dest;
 }
 
-short get_displacement(unsigned char w_bit, FILE* file) {
-  short dest = fgetc(file);
+i16 get_displacement(u8 w_bit, FILE* file) {
+  i16 dest = fgetc(file);
   if (w_bit) {
-    short next_byte = fgetc(file);
+    i8 next_byte = fgetc(file);
     dest = (next_byte << 8) | dest;
   } else if (dest & 0x80) {
     dest |= 0xFF00;
@@ -44,22 +50,22 @@ short get_displacement(unsigned char w_bit, FILE* file) {
   return dest;
 }
 
-void print_move_immediate_to_register(unsigned char opcode_byte, FILE* file) {
-  unsigned char w_bit = get_bit(opcode_byte , 3);
-  unsigned char reg = get_bits(opcode_byte, 0, 2);
+void print_move_immediate_to_register(u8 opcode_byte, FILE* file) {
+  u8 w_bit = get_bit(opcode_byte , 3);
+  u8 reg = get_bits(opcode_byte, 0, 2);
 
-  unsigned int dest = get_immediate(w_bit, file);
+  u16 dest = get_immediate(w_bit, file);
   const char* source = register_file[reg + 8*w_bit];
 
   printf("mov %s, %d\n", source, dest);
 }
 
-void print_move_immediate_to_register_memory(unsigned char opcode_byte, FILE* file) {
-  unsigned char byte = (unsigned char)fgetc(file);
-  unsigned char w_bit = get_bit(opcode_byte , 0);
-  unsigned char mod = get_bits(byte, 6, 7);
-  unsigned char rm = get_bits(byte, 0, 2);
-  short displacement = 0;
+void print_move_immediate_to_register_memory(u8 opcode_byte, FILE* file) {
+  u8 byte = (u8)fgetc(file);
+  u8 w_bit = get_bit(opcode_byte , 0);
+  u8 mod = get_bits(byte, 6, 7);
+  u8 rm = get_bits(byte, 0, 2);
+  i16 displacement = 0;
 
   char source[20] = {};
 
@@ -76,7 +82,7 @@ void print_move_immediate_to_register_memory(unsigned char opcode_byte, FILE* fi
     sprintf(source, "[%s]", address);
   }
 
-  unsigned int immediate = get_immediate(w_bit, file);
+  u16 immediate = get_immediate(w_bit, file);
 
   if (w_bit) {
     printf("mov %s, word %d\n", source, immediate);
@@ -85,14 +91,14 @@ void print_move_immediate_to_register_memory(unsigned char opcode_byte, FILE* fi
   }
 }
 
-void print_move_instruction(unsigned char opcode_byte, FILE* file) {
-  unsigned char byte = (unsigned char)fgetc(file);
+void print_move_instruction(u8 opcode_byte, FILE* file) {
+  u8 byte = (u8)fgetc(file);
 
-  unsigned char w_bit = get_bit(opcode_byte , 0);
-  unsigned char d_bit = get_bit(opcode_byte, 1);
-  unsigned char mod = get_bits(byte, 6, 7);
-  unsigned char reg = get_bits(byte, 3, 5);
-  unsigned char rm = get_bits(byte, 0, 2);
+  u8 w_bit = get_bit(opcode_byte , 0);
+  u8 d_bit = get_bit(opcode_byte, 1);
+  u8 mod = get_bits(byte, 6, 7);
+  u8 reg = get_bits(byte, 3, 5);
+  u8 rm = get_bits(byte, 0, 2);
 
   char source[20] = {};
   char dest[20] = {};
@@ -135,15 +141,15 @@ void print_move_instruction(unsigned char opcode_byte, FILE* file) {
   }
 }
 
-void print_move_memory_to_accumulator(unsigned char opcode_byte, FILE* file) {
-  unsigned char w_bit = get_bit(opcode_byte , 0);
-  unsigned int immediate = get_immediate(w_bit, file);
+void print_move_memory_to_accumulator(u8 opcode_byte, FILE* file) {
+  u8 w_bit = get_bit(opcode_byte , 0);
+  u16 immediate = get_immediate(w_bit, file);
   printf("mov ax, [%d]\n", immediate);
 }
 
-void print_move_accumulator_to_memory(unsigned char opcode_byte, FILE* file) {
-  unsigned char w_bit = get_bit(opcode_byte , 0);
-  unsigned int immediate = get_immediate(w_bit, file);
+void print_move_accumulator_to_memory(u8 opcode_byte, FILE* file) {
+  u8 w_bit = get_bit(opcode_byte , 0);
+  u16 immediate = get_immediate(w_bit, file);
   printf("mov [%d], ax\n", immediate);
 }
 
@@ -163,9 +169,9 @@ int main(int argc, char* argv[]) {
 
     printf("bits 16\n");
 
-    int ch;
+    i8 ch;
     while ((ch = fgetc(file)) != EOF) {
-        unsigned char byte = (unsigned char)ch;
+        u8 byte = (u8)ch;
 
         if (get_bits(byte, 2, 7) == 0b100010) {
           print_move_instruction(byte, file);
