@@ -31,8 +31,8 @@ add [bp + 0], bx
 add [bx + 2], cx
 add [bp + si + 4], bh
 add [bp + di + 6], di
-;add byte [bx], 34
-;add word [bp + si + 1000], 29
+add byte [bx], 34
+add word [bp + si + 1000], 29
 ;add ax, [bp]
 ;add al, [bx + si]
 ;add ax, bx

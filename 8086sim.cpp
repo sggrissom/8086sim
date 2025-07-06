@@ -72,10 +72,10 @@ void immediate_to_register(char* instruction, u8 opcode_byte, FILE* file) {
   sprintf(instruction + strlen(instruction), " %s, %d", source, dest);
 }
 
-void immediate_to_register_memory(char* instruction, u8 opcode_byte, FILE* file) {
+void immediate_to_register_memory(char* instruction, u8 opcode_byte, FILE* file, bool use_s_bit) {
   u8 byte = (u8)fgetc(file);
   u8 w_bit = get_bit(opcode_byte , 0);
-  u8 s_bit = get_bit(opcode_byte , 1);
+  u8 s_bit = use_s_bit ? get_bit(opcode_byte , 1) : 0;
   u8 mod = get_bits(byte, 6, 7);
   u8 rm = get_bits(byte, 0, 2);
   i16 displacement = 0;
@@ -103,7 +103,7 @@ void immediate_to_register_memory(char* instruction, u8 opcode_byte, FILE* file)
     sprintf(source, "[%s]", address);
   }
 
-  u16 immediate = get_immediate(w_bit, s_bit, file);
+  u16 immediate = get_immediate(w_bit && !s_bit, s_bit, file);
 
   if (w_bit) {
     sprintf(instruction + strlen(instruction), " %s, word %d", source, immediate);
@@ -196,7 +196,7 @@ void move_immediate_to_register(char* instruction, u8 opcode_byte, FILE* file) {
 
 void move_immediate_to_register_memory(char* instruction, u8 opcode_byte, FILE* file) {
   sprintf(instruction, "mov");
-  immediate_to_register_memory(instruction, opcode_byte, file);
+  immediate_to_register_memory(instruction, opcode_byte, file, false);
 }
 
 void move_memory_to_accumulator(char* instruction, u8 opcode_byte, FILE* file) {
@@ -216,7 +216,7 @@ void add_register_to_register(char* instruction, u8 opcode_byte, FILE* file) {
 
 void add_immediate_to_register(char* instruction, u8 opcode_byte, FILE* file) {
   sprintf(instruction, "add");
-  immediate_to_register_memory(instruction, opcode_byte, file);
+  immediate_to_register_memory(instruction, opcode_byte, file, true);
 }
 
 void add_immediate_to_accumulator(char* instruction, u8 opcode_byte, FILE* file) {
