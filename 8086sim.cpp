@@ -18,6 +18,10 @@ u8 get_bit(u8 byte, u8 num) {
   return get_bits(byte, num, num);
 }
 
+const char* opcode_instruction[3] = {
+  "add", "sub", "cmp",
+};
+
 const char* register_file[16] = {
   "al", "cl", "dl", "bl",
   "ah", "ch", "dh", "bh",
@@ -87,6 +91,17 @@ void immediate_to_register_memory(char* instruction, u8 opcode_byte, FILE* file,
 
     u16 immediate = get_immediate(w_bit && !s_bit, s_bit, file);
     sprintf(instruction + strlen(instruction), " %s, %d", source, immediate);
+    return;
+  }
+
+  if (rm == 0b110 && mod == 0b00) {
+    u16 disp = get_immediate(w_bit, 0, file);
+    u16 immediate = get_immediate(w_bit && !s_bit, s_bit, file);
+    if (w_bit) {
+      sprintf(instruction + strlen(instruction), " [%d], word %d", disp, immediate);
+    } else {
+      sprintf(instruction + strlen(instruction), " [%d], byte %d", disp, immediate);
+    }
     return;
   }
 
@@ -209,18 +224,37 @@ void move_accumulator_to_memory(char* instruction, u8 opcode_byte, FILE* file) {
   accumulator_to_memory(instruction, opcode_byte, file);
 }
 
-void add_register_to_register(char* instruction, u8 opcode_byte, FILE* file) {
-  sprintf(instruction, "add");
+const char * get_op(u8 op) {
+  if (op == 0b000) {
+    return opcode_instruction[0];
+  }
+  else if (op == 0b101) {
+    return opcode_instruction[1];
+  }
+  else if (op == 0b111) {
+    return opcode_instruction[2];
+  }
+  return "";
+}
+
+void add_sub_cmp_register_to_register(char* instruction, u8 opcode_byte, FILE* file) {
+  u8 op = get_bits(opcode_byte, 3, 5);
+  sprintf(instruction, get_op(op));
   register_to_register(instruction, opcode_byte, file);
 }
 
-void add_immediate_to_register(char* instruction, u8 opcode_byte, FILE* file) {
-  sprintf(instruction, "add");
+void add_sub_cmp_immediate_to_register(char* instruction, u8 opcode_byte, FILE* file) {
+  u8 next_byte = (u8)fgetc(file);
+  u8 op = get_bits(next_byte, 3, 5);
+  ungetc(next_byte, file);
+
+  sprintf(instruction, get_op(op));
   immediate_to_register_memory(instruction, opcode_byte, file, true);
 }
 
-void add_immediate_to_accumulator(char* instruction, u8 opcode_byte, FILE* file) {
-  sprintf(instruction, "add");
+void add_sub_cmp_immediate_to_accumulator(char* instruction, u8 opcode_byte, FILE* file) {
+  u8 op = get_bits(opcode_byte, 3, 5);
+  sprintf(instruction, get_op(op));
   immediate_to_accumulator(instruction, opcode_byte, file);
 }
 
@@ -246,13 +280,25 @@ int main(int argc, char* argv[]) {
     u8 byte = (u8)ch;
 
     if (get_bits(byte, 2, 7) == 0b000000) {
-      add_register_to_register(instruction, byte, file);
+      add_sub_cmp_register_to_register(instruction, byte, file);
+    }
+    else if (get_bits(byte, 2, 7) == 0b001010) {
+      add_sub_cmp_register_to_register(instruction, byte, file);
+    }
+    else if (get_bits(byte, 2, 7) == 0b001110) {
+      add_sub_cmp_register_to_register(instruction, byte, file);
     }
     else if (get_bits(byte, 2, 7) == 0b100000) {
-      add_immediate_to_register(instruction, byte, file);
+      add_sub_cmp_immediate_to_register(instruction, byte, file);
     }
     else if (get_bits(byte, 1, 7) == 0b0000010) {
-      add_immediate_to_accumulator(instruction, byte, file);
+      add_sub_cmp_immediate_to_accumulator(instruction, byte, file);
+    }
+    else if (get_bits(byte, 1, 7) == 0b0010110) {
+      add_sub_cmp_immediate_to_accumulator(instruction, byte, file);
+    }
+    else if (get_bits(byte, 1, 7) == 0b0011110) {
+      add_sub_cmp_immediate_to_accumulator(instruction, byte, file);
     }
     else if (get_bits(byte, 2, 7) == 0b100010) {
       move_register_to_register(instruction, byte, file);
