@@ -258,6 +258,17 @@ void add_sub_cmp_immediate_to_accumulator(char* instruction, u8 opcode_byte, FIL
   immediate_to_accumulator(instruction, opcode_byte, file);
 }
 
+void conditional_jump(char* instruction, const char* jump, FILE* file) {
+  i8 data = fgetc(file);
+  if (data+2 > 0) {
+    sprintf(instruction, "%s $+%d+0", jump, data+2);
+  } else if (data+2 == 0) {
+    sprintf(instruction, "%s $+0", jump);
+  } else {
+    sprintf(instruction, "%s $%d+0", jump, data+2);
+  }
+}
+
 int main(int argc, char* argv[]) {
   if (argc < 2) {
     printf("Usage: %s <filename>\n", argv[0]);
@@ -279,7 +290,67 @@ int main(int argc, char* argv[]) {
   while ((ch = fgetc(file)) != EOF) {
     u8 byte = (u8)ch;
 
-    if (get_bits(byte, 2, 7) == 0b000000) {
+    if (byte == 0b01110100) {
+      conditional_jump(instruction, "je", file);
+    }
+    else if (byte == 0b01111100) {
+      conditional_jump(instruction, "jl", file);
+    }
+    else if (byte == 0b01111110) {
+      conditional_jump(instruction, "jle", file);
+    }
+    else if (byte == 0b01110010) {
+      conditional_jump(instruction, "jb", file);
+    }
+    else if (byte == 0b01110110) {
+      conditional_jump(instruction, "jbe", file);
+    }
+    else if (byte == 0b01111010) {
+      conditional_jump(instruction, "jp", file);
+    }
+    else if (byte == 0b01110000) {
+      conditional_jump(instruction, "jo", file);
+    }
+    else if (byte == 0b01111000) {
+      conditional_jump(instruction, "js", file);
+    }
+    else if (byte == 0b01110101) {
+      conditional_jump(instruction, "jne", file);
+    }
+    else if (byte == 0b01111101) {
+      conditional_jump(instruction, "jnl", file);
+    }
+    else if (byte == 0b01111111) {
+      conditional_jump(instruction, "jnle", file);
+    }
+    else if (byte == 0b01110011) {
+      conditional_jump(instruction, "jnb", file);
+    }
+    else if (byte == 0b01110111) {
+      conditional_jump(instruction, "jnbe", file);
+    }
+    else if (byte == 0b01111011) {
+      conditional_jump(instruction, "jnp", file);
+    }
+    else if (byte == 0b01110001) {
+      conditional_jump(instruction, "jno", file);
+    }
+    else if (byte == 0b01111001) {
+      conditional_jump(instruction, "jns", file);
+    }
+    else if (byte == 0b11100010) {
+      conditional_jump(instruction, "loop", file);
+    }
+    else if (byte == 0b11100001) {
+      conditional_jump(instruction, "loopz", file);
+    }
+    else if (byte == 0b11100000) {
+      conditional_jump(instruction, "loopnz", file);
+    }
+    else if (byte == 0b11100011) {
+      conditional_jump(instruction, "jcxz", file);
+    }
+    else if (get_bits(byte, 2, 7) == 0b000000) {
       add_sub_cmp_register_to_register(instruction, byte, file);
     }
     else if (get_bits(byte, 2, 7) == 0b001010) {
