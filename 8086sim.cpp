@@ -258,6 +258,44 @@ void add_sub_cmp_immediate_to_accumulator(char* instruction, u8 opcode_byte, FIL
   immediate_to_accumulator(instruction, opcode_byte, file);
 }
 
+void push_register(char* instruction, u8 opcode_byte, FILE* file) {
+  u8 reg = get_bits(opcode_byte, 0, 2);
+  const char* address = effective_address[reg];
+  sprintf(instruction, "push %s", address);
+}
+
+void push_register_memory(char* instruction, u8 opcode_byte, FILE* file) {
+  sprintf(instruction, "push");
+
+  u8 byte = (u8)fgetc(file);
+  u8 mod = get_bits(byte, 6, 7);
+  u8 rm = get_bits(byte, 0, 2);
+
+  if (rm == 0b110 && mod == 0b00) {
+    u16 displacement = get_displacement(1, file);
+    sprintf(instruction + strlen(instruction), " word [%d]", displacement);
+    return;
+  }
+
+  char source[20] = {};
+  char dest[20] = {};
+  short displacement = 0;
+  const char* address = effective_address[rm];
+
+  if (mod == 0b01) {
+    displacement = get_displacement(0, file);
+  } else if (mod == 0b10) {
+    displacement = get_displacement(1, file);
+  }
+  if (displacement != 0) {
+    sprintf(source, "[%s + %hd]", address, displacement);
+  } else {
+    sprintf(source, "[%s]", address);
+  }
+
+  sprintf(instruction + strlen(instruction), " word %s", source);
+}
+
 void conditional_jump(char* instruction, const char* jump, FILE* file) {
   i8 data = fgetc(file);
   if (data+2 > 0) {
@@ -285,12 +323,18 @@ int main(int argc, char* argv[]) {
 
   printf("bits 16\n");
 
-  i8 ch;
+  i16 ch;
   char instruction[128] = {};
   while ((ch = fgetc(file)) != EOF) {
     u8 byte = (u8)ch;
 
-    if (byte == 0b01110100) {
+    if (byte == 0b11111111) {
+      push_register_memory(instruction, byte, file);
+    }
+    else if (get_bits(byte, 3, 7) == 0b01010) {
+      push_register(instruction, byte, file);
+    }
+    else if (byte == 0b01110100) {
       conditional_jump(instruction, "je", file);
     }
     else if (byte == 0b01111100) {
