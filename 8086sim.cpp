@@ -261,6 +261,51 @@ void add_sub_cmp_immediate_to_accumulator(char* instruction, u8 opcode_byte, FIL
   sprintf(instruction, get_op(op));
   immediate_to_accumulator(instruction, opcode_byte, file);
 }
+
+void pop_segment_register(char* instruction, u8 opcode_byte, FILE* file) {
+  u8 reg = get_bits(opcode_byte, 3, 4);
+  const char* address = segment_register[reg];
+  sprintf(instruction, "pop %s", address);
+}
+
+void pop_register(char* instruction, u8 opcode_byte, FILE* file) {
+  u8 reg = get_bits(opcode_byte, 0, 2);
+  const char* address = get_register(reg, 1);
+  sprintf(instruction, "pop %s", address);
+}
+
+void pop_register_memory(char* instruction, u8 opcode_byte, FILE* file) {
+  sprintf(instruction, "pop");
+
+  u8 byte = (u8)fgetc(file);
+  u8 mod = get_bits(byte, 6, 7);
+  u8 rm = get_bits(byte, 0, 2);
+
+  if (rm == 0b110 && mod == 0b00) {
+    u16 displacement = get_displacement(1, file);
+    sprintf(instruction + strlen(instruction), " word [%d]", displacement);
+    return;
+  }
+
+  char source[20] = {};
+  char dest[20] = {};
+  short displacement = 0;
+  const char* address = effective_address[rm];
+
+  if (mod == 0b01) {
+    displacement = get_displacement(0, file);
+  } else if (mod == 0b10) {
+    displacement = get_displacement(1, file);
+  }
+  if (displacement != 0) {
+    sprintf(source, "[%s + %hd]", address, displacement);
+  } else {
+    sprintf(source, "[%s]", address);
+  }
+
+  sprintf(instruction + strlen(instruction), " word %s", source);
+}
+
 void push_segment_register(char* instruction, u8 opcode_byte, FILE* file) {
   u8 reg = get_bits(opcode_byte, 3, 4);
   const char* address = segment_register[reg];
@@ -345,6 +390,15 @@ int main(int argc, char* argv[]) {
     }
     else if (get_bits(byte, 3, 7) == 0b01010) {
       push_register(instruction, byte, file);
+    }
+    if (byte == 0b10001111) {
+      pop_register_memory(instruction, byte, file);
+    }
+    else if (get_bits(byte, 5, 7) == 0b000 && get_bits(byte, 0, 2) == 0b111) {
+      pop_segment_register(instruction, byte, file);
+    }
+    else if (get_bits(byte, 3, 7) == 0b01011) {
+      pop_register(instruction, byte, file);
     }
     else if (byte == 0b01110100) {
       conditional_jump(instruction, "je", file);

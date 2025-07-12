@@ -60,13 +60,13 @@ push ax
 push dx
 push cs
 
-;pop word [bp + si]
-;pop word [3]
-;pop word [bx + di - 3000]
-;pop sp
-;pop di
-;pop si
-;pop ds
+pop word [bp + si]
+pop word [3]
+pop word [bx + di - 3000]
+pop sp
+pop di
+pop si
+pop ds
 
 ;xchg ax, [bp - 1000]
 ;xchg [bx + 50], bp
