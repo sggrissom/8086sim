@@ -34,6 +34,10 @@ const char* effective_address[8] = {
   "si", "di", "bp", "bx",
 };
 
+const char* segment_register[4] = {
+  "es", "cs", "ss", "ds"
+};
+
 const char* get_register(u8 reg, u8 w_bit) {
   return register_file[reg + 8*w_bit];
 }
@@ -257,10 +261,15 @@ void add_sub_cmp_immediate_to_accumulator(char* instruction, u8 opcode_byte, FIL
   sprintf(instruction, get_op(op));
   immediate_to_accumulator(instruction, opcode_byte, file);
 }
+void push_segment_register(char* instruction, u8 opcode_byte, FILE* file) {
+  u8 reg = get_bits(opcode_byte, 3, 4);
+  const char* address = segment_register[reg];
+  sprintf(instruction, "push %s", address);
+}
 
 void push_register(char* instruction, u8 opcode_byte, FILE* file) {
   u8 reg = get_bits(opcode_byte, 0, 2);
-  const char* address = effective_address[reg];
+  const char* address = get_register(reg, 1);
   sprintf(instruction, "push %s", address);
 }
 
@@ -330,6 +339,9 @@ int main(int argc, char* argv[]) {
 
     if (byte == 0b11111111) {
       push_register_memory(instruction, byte, file);
+    }
+    else if (get_bits(byte, 5, 7) == 0b000 && get_bits(byte, 0, 2) == 0b110) {
+      push_segment_register(instruction, byte, file);
     }
     else if (get_bits(byte, 3, 7) == 0b01010) {
       push_register(instruction, byte, file);

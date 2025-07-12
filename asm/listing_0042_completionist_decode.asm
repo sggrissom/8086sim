@@ -54,11 +54,11 @@ mov [15], ax
 
 push word [bp + si]
 push word [3000]
-;push word [bx + di - 30]
-;push cx
-;push ax
-;push dx
-;push cs
+push word [bx + di - 30]
+push cx
+push ax
+push dx
+push cs
 
 ;pop word [bp + si]
 ;pop word [3]
