@@ -147,7 +147,11 @@ void register_to_register(char *instruction, u8 opcode_byte, FILE* file) {
   if (mod == 0b11) {
     strcpy(source, get_register(rm, w_bit));
     strcpy(dest, get_register(reg, w_bit));
-    sprintf(instruction + strlen(instruction), " %s, %s", source, dest);
+    if (d_bit == 0b0) {
+      sprintf(instruction + strlen(instruction), " %s, %s", source, dest);
+    } else {
+      sprintf(instruction + strlen(instruction), " %s, %s", dest, source);
+    }
     return;
   }
 
@@ -350,6 +354,17 @@ void push_register_memory(char* instruction, u8 opcode_byte, FILE* file) {
   sprintf(instruction + strlen(instruction), " word %s", source);
 }
 
+void exchange_memory_with_register(char *instruction, u8 opcode_byte, FILE* file) {
+  sprintf(instruction, "xchg");
+  register_to_register(instruction, opcode_byte, file);
+}
+
+void exchange_register_with_accumulator(char *instruction, u8 opcode_byte, FILE* file) {
+  sprintf(instruction, "xchg");
+  u8 reg = get_bits(opcode_byte, 0, 2);
+  sprintf(instruction + strlen(instruction), " ax, %s", get_register(reg, 1));
+}
+
 void conditional_jump(char* instruction, const char* jump, FILE* file) {
   i8 data = fgetc(file);
   if (data+2 > 0) {
@@ -399,6 +414,12 @@ int main(int argc, char* argv[]) {
     }
     else if (get_bits(byte, 3, 7) == 0b01011) {
       pop_register(instruction, byte, file);
+    }
+    else if (get_bits(byte, 1, 7) == 0b1000011) {
+      exchange_memory_with_register(instruction, byte, file);
+    }
+    else if (get_bits(byte, 3, 7) == 0b10010) {
+      exchange_register_with_accumulator(instruction, byte, file);
     }
     else if (byte == 0b01110100) {
       conditional_jump(instruction, "je", file);
