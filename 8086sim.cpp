@@ -365,6 +365,28 @@ void exchange_register_with_accumulator(char *instruction, u8 opcode_byte, FILE*
   sprintf(instruction + strlen(instruction), " ax, %s", get_register(reg, 1));
 }
 
+void in_fixed_port(char *instruction, u8 opcode_byte, FILE* file) {
+  u8 w_bit = get_bit(opcode_byte, 0);
+  u16 data = get_immediate(0, 0, file);
+  sprintf(instruction, "in %s, %hd", w_bit ? "ax" : "al", data);
+}
+
+void in_variable_port(char *instruction, u8 opcode_byte) {
+  u8 w_bit = get_bit(opcode_byte, 0);
+  sprintf(instruction, "in %s, dx", w_bit ? "ax" : "al");
+}
+
+void out_fixed_port(char *instruction, u8 opcode_byte, FILE* file) {
+  u8 w_bit = get_bit(opcode_byte, 0);
+  u16 data = get_immediate(0, 0, file);
+  sprintf(instruction, "out %s, %hd", w_bit ? "ax" : "al", data);
+}
+
+void out_variable_port(char *instruction, u8 opcode_byte) {
+  u8 w_bit = get_bit(opcode_byte, 0);
+  sprintf(instruction, "out %s, dx", w_bit ? "ax" : "al");
+}
+
 void conditional_jump(char* instruction, const char* jump, FILE* file) {
   i8 data = fgetc(file);
   if (data+2 > 0) {
@@ -395,6 +417,7 @@ int main(int argc, char* argv[]) {
   i16 ch;
   char instruction[128] = {};
   while ((ch = fgetc(file)) != EOF) {
+    memset(instruction, 0, sizeof(instruction));
     u8 byte = (u8)ch;
 
     if (byte == 0b11111111) {
@@ -420,6 +443,18 @@ int main(int argc, char* argv[]) {
     }
     else if (get_bits(byte, 3, 7) == 0b10010) {
       exchange_register_with_accumulator(instruction, byte, file);
+    }
+    else if (get_bits(byte, 1, 7) == 0b1110010) {
+      in_fixed_port(instruction, byte, file);
+    }
+    else if (get_bits(byte, 1, 7) == 0b1110110) {
+      in_variable_port(instruction, byte);
+    }
+    else if (get_bits(byte, 1, 7) == 0b1110011) {
+      out_fixed_port(instruction, byte, file);
+    }
+    else if (get_bits(byte, 1, 7) == 0b1110111) {
+      out_variable_port(instruction, byte);
     }
     else if (byte == 0b01110100) {
       conditional_jump(instruction, "je", file);
