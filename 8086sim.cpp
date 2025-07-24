@@ -379,12 +379,12 @@ void in_variable_port(char *instruction, u8 opcode_byte) {
 void out_fixed_port(char *instruction, u8 opcode_byte, FILE* file) {
   u8 w_bit = get_bit(opcode_byte, 0);
   u16 data = get_immediate(0, 0, file);
-  sprintf(instruction, "out %s, %hd", w_bit ? "ax" : "al", data);
+  sprintf(instruction, "out %hd, %s", data, w_bit ? "ax" : "al");
 }
 
 void out_variable_port(char *instruction, u8 opcode_byte) {
   u8 w_bit = get_bit(opcode_byte, 0);
-  sprintf(instruction, "out %s, dx", w_bit ? "ax" : "al");
+  sprintf(instruction, "out dx, %s", w_bit ? "ax" : "al");
 }
 
 void conditional_jump(char* instruction, const char* jump, FILE* file) {
