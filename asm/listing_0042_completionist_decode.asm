@@ -88,26 +88,26 @@ in ax, dx
 out 44, ax
 out dx, al
 
-;xlat
-;lea ax, [bx + di + 1420]
-;lea bx, [bp - 50]
-;lea sp, [bp - 1003]
-;lea di, [bx + si - 7]
+xlat
+lea ax, [bx + di + 1420]
+lea bx, [bp - 50]
+lea sp, [bp - 1003]
+lea di, [bx + si - 7]
 
-;lds ax, [bx + di + 1420]
-;lds bx, [bp - 50]
-;lds sp, [bp - 1003]
-;lds di, [bx + si - 7]
+lds ax, [bx + di + 1420]
+lds bx, [bp - 50]
+lds sp, [bp - 1003]
+lds di, [bx + si - 7]
 
-;les ax, [bx + di + 1420]
-;les bx, [bp - 50]
-;les sp, [bp - 1003]
-;les di, [bx + si - 7]
+les ax, [bx + di + 1420]
+les bx, [bp - 50]
+les sp, [bp - 1003]
+les di, [bx + si - 7]
 
-;lahf
-;sahf
-;pushf
-;popf
+lahf
+sahf
+pushf
+popf
 
 add cx, [bp]
 add dx, [bx + si]
@@ -201,50 +201,50 @@ sub ch, al
 ;neg word [bp + di - 10044]
 ;neg word [9349]
 ;neg byte [bp]
-;
-;cmp bx, cx
-;cmp dh, [bp + 390]
-;cmp [bp + 2], si
-;cmp bl, 20
-;cmp byte [bx], 34
-;cmp ax, 23909
-;
+
+cmp bx, cx
+cmp dh, [bp + 390]
+cmp [bp + 2], si
+cmp bl, 20
+cmp byte [bx], 34
+cmp ax, 23909
+
 ;aas
 ;das
-;
+
 ;mul al
 ;mul cx
 ;mul word [bp]
 ;mul byte [bx + di + 500]
-;
+
 ;imul ch
 ;imul dx
 ;imul byte [bx]
 ;imul word [9483]
-;
+
 ;aam
-;
+
 ;div bl
 ;div sp
 ;div byte [bx + si + 2990]
 ;div word [bp + di + 1000]
-;
+
 ;idiv ax
 ;idiv si
 ;idiv byte [bp + si]
 ;idiv word [bx + 493]
-;
+
 ;aad
 ;cbw
 ;cwd
-;    
+    
 ;not ah
 ;not bl
 ;not sp
 ;not si
 ;not word [bp]
 ;not byte [bp + 9905]
-;
+
 ;shl ah, 1
 ;shr ax, 1
 ;sar bx, 1
@@ -252,7 +252,7 @@ sub ch, al
 ;ror dh, 1
 ;rcl sp, 1
 ;rcr bp, 1
-;
+
 ;shl word [bp + 5], 1
 ;shr byte [bx + si - 199], 1
 ;sar byte [bx + di - 300], 1
@@ -260,7 +260,7 @@ sub ch, al
 ;ror word [4938], 1
 ;rcl byte [3], 1
 ;rcr word [bx], 1
-;
+
 ;shl ah, cl
 ;shr ax, cl
 ;sar bx, cl
@@ -268,7 +268,7 @@ sub ch, al
 ;ror dh, cl
 ;rcl sp, cl
 ;rcr bp, cl
-;
+
 ;shl word [bp + 5], cl
 ;shr word [bx + si - 199], cl
 ;sar byte [bx + di - 300], cl
@@ -276,7 +276,7 @@ sub ch, al
 ;ror byte [4938], cl
 ;rcl byte [3], cl
 ;rcr word [bx], cl
-;
+
 ;and al, ah
 ;and ch, cl
 ;and bp, si

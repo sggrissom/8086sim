@@ -131,11 +131,11 @@ void immediate_to_register_memory(char* instruction, u8 opcode_byte, FILE* file,
   }
 }
 
-void register_to_register(char *instruction, u8 opcode_byte, FILE* file) {
+void register_to_register(char *instruction, u8 opcode_byte, FILE* file, bool use_d_bit, bool use_w_bit) {
   u8 byte = (u8)fgetc(file);
 
-  u8 w_bit = get_bit(opcode_byte , 0);
-  u8 d_bit = get_bit(opcode_byte, 1);
+  u8 w_bit = use_w_bit ? get_bit(opcode_byte , 0) : 1;
+  u8 d_bit = use_d_bit ? get_bit(opcode_byte, 1) : 1;
   u8 mod = get_bits(byte, 6, 7);
   u8 reg = get_bits(byte, 3, 5);
   u8 rm = get_bits(byte, 0, 2);
@@ -209,7 +209,7 @@ void immediate_to_accumulator(char* instruction, u8 opcode_byte, FILE* file) {
 
 void move_register_to_register(char* instruction, u8 opcode_byte, FILE* file) {
   sprintf(instruction, "mov");
-  register_to_register(instruction, opcode_byte, file);
+  register_to_register(instruction, opcode_byte, file, true, true);
 }
 
 void move_immediate_to_register(char* instruction, u8 opcode_byte, FILE* file) {
@@ -248,7 +248,7 @@ const char * get_op(u8 op) {
 void add_sub_cmp_register_to_register(char* instruction, u8 opcode_byte, FILE* file) {
   u8 op = get_bits(opcode_byte, 3, 5);
   sprintf(instruction, get_op(op));
-  register_to_register(instruction, opcode_byte, file);
+  register_to_register(instruction, opcode_byte, file, true, true);
 }
 
 void add_sub_cmp_immediate_to_register(char* instruction, u8 opcode_byte, FILE* file) {
@@ -356,13 +356,28 @@ void push_register_memory(char* instruction, u8 opcode_byte, FILE* file) {
 
 void exchange_memory_with_register(char *instruction, u8 opcode_byte, FILE* file) {
   sprintf(instruction, "xchg");
-  register_to_register(instruction, opcode_byte, file);
+  register_to_register(instruction, opcode_byte, file, true, true);
 }
 
 void exchange_register_with_accumulator(char *instruction, u8 opcode_byte, FILE* file) {
   sprintf(instruction, "xchg");
   u8 reg = get_bits(opcode_byte, 0, 2);
   sprintf(instruction + strlen(instruction), " ax, %s", get_register(reg, 1));
+}
+
+void lea_memory_with_register(char *instruction, u8 opcode_byte, FILE* file) {
+  sprintf(instruction, "lea");
+  register_to_register(instruction, opcode_byte, file, false, true);
+}
+
+void lds_memory_with_register(char *instruction, u8 opcode_byte, FILE* file) {
+  sprintf(instruction, "lds");
+  register_to_register(instruction, opcode_byte, file, false, true);
+}
+
+void les_memory_with_register(char *instruction, u8 opcode_byte, FILE* file) {
+  sprintf(instruction, "les");
+  register_to_register(instruction, opcode_byte, file, false, false);
 }
 
 void in_fixed_port(char *instruction, u8 opcode_byte, FILE* file) {
@@ -515,6 +530,30 @@ int main(int argc, char* argv[]) {
     }
     else if (byte == 0b11100011) {
       conditional_jump(instruction, "jcxz", file);
+    }
+    else if (byte == 0b11010111) {
+      sprintf(instruction, "xlat");
+    }
+    else if (byte == 0b10011111) {
+      sprintf(instruction, "lahf");
+    }
+    else if (byte == 0b10011110) {
+      sprintf(instruction, "sahf");
+    }
+    else if (byte == 0b10011100) {
+      sprintf(instruction, "pushf");
+    }
+    else if (byte == 0b10011101) {
+      sprintf(instruction, "popf");
+    }
+    else if (byte == 0b10001101) {
+      lea_memory_with_register(instruction, byte, file);
+    }
+    else if (byte == 0b11000101) {
+      lds_memory_with_register(instruction, byte, file);
+    }
+    else if (byte == 0b11000100) {
+      les_memory_with_register(instruction, byte, file);
     }
     else if (get_bits(byte, 2, 7) == 0b000000) {
       add_sub_cmp_register_to_register(instruction, byte, file);
