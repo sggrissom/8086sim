@@ -24,13 +24,6 @@ const char* opcode_instruction[3] = {
   "add", "sub", "cmp",
 };
 
-const char* register_file[16] = {
-  "al", "cl", "dl", "bl",
-  "ah", "ch", "dh", "bh",
-  "ax", "cx", "dx", "bx",
-  "sp", "bp", "si", "di",
-};
-
 const char* effective_address[8] = {
   "bx + si", "bx + di", "bp + si", "bp + di",
   "si", "di", "bp", "bx",
@@ -308,12 +301,6 @@ void pop_register_memory(char* instruction, u8 opcode_byte, FILE* file) {
   sprintf(instruction + strlen(instruction), " word %s", source);
 }
 
-void push_register(char* instruction, u8 opcode_byte, FILE* file) {
-  u8 reg = get_bits(opcode_byte, 0, 2);
-  const char* address = get_register(reg, 1);
-  sprintf(instruction, "push %s", address);
-}
-
 void push_register_memory(char* instruction, u8 opcode_byte, FILE* file) {
   sprintf(instruction, "push");
 
@@ -448,9 +435,6 @@ int main(int argc, char* argv[]) {
 
     if (byte == 0b11111111) {
       push_register_memory(instruction, byte, file);
-    }
-    else if (get_bits(byte, 3, 7) == 0b01010) {
-      push_register(instruction, byte, file);
     }
     if (byte == 0b10001111) {
       pop_register_memory(instruction, byte, file);
