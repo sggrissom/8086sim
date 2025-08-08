@@ -7,6 +7,8 @@ typedef uint16_t u16;
 typedef int8_t i8;
 typedef int16_t i16;
 
+#include "instructions.cpp"
+
 u8 get_bits(u8 byte, u8 start, u8 end) {
   u8 width = end - start + 1;
   u8 mask = (1 << width) - 1;
@@ -32,10 +34,6 @@ const char* register_file[16] = {
 const char* effective_address[8] = {
   "bx + si", "bx + di", "bp + si", "bp + di",
   "si", "di", "bp", "bx",
-};
-
-const char* segment_register[4] = {
-  "es", "cs", "ss", "ds"
 };
 
 const char* get_register(u8 reg, u8 w_bit) {
@@ -310,12 +308,6 @@ void pop_register_memory(char* instruction, u8 opcode_byte, FILE* file) {
   sprintf(instruction + strlen(instruction), " word %s", source);
 }
 
-void push_segment_register(char* instruction, u8 opcode_byte, FILE* file) {
-  u8 reg = get_bits(opcode_byte, 3, 4);
-  const char* address = segment_register[reg];
-  sprintf(instruction, "push %s", address);
-}
-
 void push_register(char* instruction, u8 opcode_byte, FILE* file) {
   u8 reg = get_bits(opcode_byte, 0, 2);
   const char* address = get_register(reg, 1);
@@ -413,6 +405,19 @@ void conditional_jump(char* instruction, const char* jump, FILE* file) {
   }
 }
 
+
+void print_instruction(CpuInstruction inst) {
+  if (inst.operand2) {
+    printf("%s %s %s\n", inst.operation, inst.operand1, inst.operand2);
+  }
+  else if (inst.operand1) {
+    printf("%s %s\n", inst.operation, inst.operand1);
+  }
+  else {
+    printf("%s\n", inst.operation);
+  }
+}
+
 int main(int argc, char* argv[]) {
   if (argc < 2) {
     printf("Usage: %s <filename>\n", argv[0]);
@@ -435,11 +440,14 @@ int main(int argc, char* argv[]) {
     memset(instruction, 0, sizeof(instruction));
     u8 byte = (u8)ch;
 
+    CpuInstruction inst = decode_instruction(byte, file);
+    if (inst.operation != "nop") {
+      print_instruction(inst);
+      continue;
+    }
+
     if (byte == 0b11111111) {
       push_register_memory(instruction, byte, file);
-    }
-    else if (get_bits(byte, 5, 7) == 0b000 && get_bits(byte, 0, 2) == 0b110) {
-      push_segment_register(instruction, byte, file);
     }
     else if (get_bits(byte, 3, 7) == 0b01010) {
       push_register(instruction, byte, file);
