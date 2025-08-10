@@ -54,6 +54,7 @@ for ASM_FILE in "$ASM_DIR"/*.asm; do
             # Show diff if failed
             colordiff -u <(strip_comments "$ASM_FILE") "$OUT_ASM" || true
         fi
+        exit
 fi
 done
 

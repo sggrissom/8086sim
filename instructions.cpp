@@ -46,7 +46,7 @@ const char* register_file[16] = {
 
 #define TABLE_LEN(x)  (sizeof(x)/sizeof(*(x)))
 
-CpuInstruction decode_instruction(u8 opcode, FILE *f) {
+CpuInstruction decode_instruction(u8 opcode) {
   for (size_t i = 0; i < TABLE_LEN(instruction_table); i++) {
     const CpuInstructionDefinition *d = &instruction_table[i];
     if ((opcode & d->opcode.mask) == d->opcode.match) {

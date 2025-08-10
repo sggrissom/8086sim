@@ -7,6 +7,7 @@ typedef uint16_t u16;
 typedef int8_t i8;
 typedef int16_t i16;
 
+#include "memory.cpp"
 #include "instructions.cpp"
 
 u8 get_bits(u8 byte, u8 start, u8 end) {
@@ -39,10 +40,13 @@ void print_byte(u8 byte) {
     }
 }
 
-u16 get_immediate(u8 w_bit, u8 s_bit, FILE* file) {
-  u16 dest = (u8)fgetc(file);
+u16 get_immediate(u8 w_bit, u8 s_bit, MemoryReader *reader) {
+  u8 byte;
+  read(reader, &byte);
+  u16 dest = (u16)byte;
   if (w_bit) {
-    u8 next_byte = (u8)fgetc(file);
+    u8 next_byte;
+    read(reader, &next_byte);
     dest = (next_byte << 8) | dest;
   } else if (s_bit && (dest & 0x80)) {
     dest |= 0xFF00;
@@ -50,29 +54,33 @@ u16 get_immediate(u8 w_bit, u8 s_bit, FILE* file) {
   return dest;
 }
 
-i16 get_displacement(u8 w_bit, FILE* file) {
-  i16 dest = fgetc(file);
+i16 get_displacement(u8 w_bit, MemoryReader *reader) {
+  u8 byte;
+  read(reader, &byte);
+  i16 dest = (u16)byte;
   if (w_bit) {
-    i8 next_byte = fgetc(file);
-    dest = (next_byte << 8) | dest;
+    u8 next_byte;
+    read(reader, &next_byte);
+    dest = ((i8)next_byte << 8) | dest;
   } else if (dest & 0x80) {
     dest |= 0xFF00;
   }
   return dest;
 }
 
-void immediate_to_register(char* instruction, u8 opcode_byte, FILE* file) {
+void immediate_to_register(char* instruction, u8 opcode_byte, MemoryReader *reader) {
   u8 w_bit = get_bit(opcode_byte , 3);
   u8 reg = get_bits(opcode_byte, 0, 2);
 
-  u16 dest = get_immediate(w_bit, 0, file);
+  u16 dest = get_immediate(w_bit, 0, reader);
   const char* source = get_register(reg, w_bit);
 
   sprintf(instruction + strlen(instruction), " %s, %d", source, dest);
 }
 
-void immediate_to_register_memory(char* instruction, u8 opcode_byte, FILE* file, bool use_s_bit) {
-  u8 byte = (u8)fgetc(file);
+void immediate_to_register_memory(char* instruction, u8 opcode_byte, MemoryReader *reader, bool use_s_bit) {
+  u8 byte;
+  read(reader, &byte);
   u8 w_bit = get_bit(opcode_byte , 0);
   u8 s_bit = use_s_bit ? get_bit(opcode_byte , 1) : 0;
   u8 mod = get_bits(byte, 6, 7);
@@ -84,14 +92,14 @@ void immediate_to_register_memory(char* instruction, u8 opcode_byte, FILE* file,
   if (mod == 0b11) {
     strcpy(source, get_register(rm, w_bit));
 
-    u16 immediate = get_immediate(w_bit && !s_bit, s_bit, file);
+    u16 immediate = get_immediate(w_bit && !s_bit, s_bit, reader);
     sprintf(instruction + strlen(instruction), " %s, %d", source, immediate);
     return;
   }
 
   if (rm == 0b110 && mod == 0b00) {
-    u16 disp = get_immediate(w_bit, 0, file);
-    u16 immediate = get_immediate(w_bit && !s_bit, s_bit, file);
+    u16 disp = get_immediate(w_bit, 0, reader);
+    u16 immediate = get_immediate(w_bit && !s_bit, s_bit, reader);
     if (w_bit) {
       sprintf(instruction + strlen(instruction), " [%d], word %d", disp, immediate);
     } else {
@@ -103,9 +111,9 @@ void immediate_to_register_memory(char* instruction, u8 opcode_byte, FILE* file,
   const char* address = effective_address[rm];
 
   if (mod == 0b01) {
-    displacement = get_displacement(0, file);
+    displacement = get_displacement(0, reader);
   } else if (mod == 0b10) {
-    displacement = get_displacement(1, file);
+    displacement = get_displacement(1, reader);
   }
   if (displacement != 0) {
     sprintf(source, "[%s + %hd]", address, displacement);
@@ -113,7 +121,7 @@ void immediate_to_register_memory(char* instruction, u8 opcode_byte, FILE* file,
     sprintf(source, "[%s]", address);
   }
 
-  u16 immediate = get_immediate(w_bit && !s_bit, s_bit, file);
+  u16 immediate = get_immediate(w_bit && !s_bit, s_bit, reader);
 
   if (w_bit) {
     sprintf(instruction + strlen(instruction), " %s, word %d", source, immediate);
@@ -122,8 +130,9 @@ void immediate_to_register_memory(char* instruction, u8 opcode_byte, FILE* file,
   }
 }
 
-void register_to_register(char *instruction, u8 opcode_byte, FILE* file, bool use_d_bit, bool use_w_bit) {
-  u8 byte = (u8)fgetc(file);
+void register_to_register(char *instruction, u8 opcode_byte, MemoryReader *reader, bool use_d_bit, bool use_w_bit) {
+  u8 byte;
+  read(reader, &byte);
 
   u8 w_bit = use_w_bit ? get_bit(opcode_byte , 0) : 1;
   u8 d_bit = use_d_bit ? get_bit(opcode_byte, 1) : 1;
@@ -150,16 +159,16 @@ void register_to_register(char *instruction, u8 opcode_byte, FILE* file, bool us
 
   strcpy(source, get_register(reg, w_bit));
   if (rm == 0b110 && mod == 0b00) {
-    u16 immediate = get_immediate(w_bit, 0, file);
+    u16 immediate = get_immediate(w_bit, 0, reader);
     sprintf(instruction + strlen(instruction), " %s, [%d]", source, immediate);
     return;
   } else {
     address = effective_address[rm];
   }
   if (mod == 0b01) {
-    displacement = get_displacement(0, file);
+    displacement = get_displacement(0, reader);
   } else if (mod == 0b10) {
-    displacement = get_displacement(1, file);
+    displacement = get_displacement(1, reader);
   }
   if (displacement > 0) {
     sprintf(dest, "[%s + %hd]", address, displacement);
@@ -176,21 +185,21 @@ void register_to_register(char *instruction, u8 opcode_byte, FILE* file, bool us
   }
 }
 
-void memory_to_accumulator(char* instruction, u8 opcode_byte, FILE* file) {
+void memory_to_accumulator(char* instruction, u8 opcode_byte, MemoryReader *reader) {
   u8 w_bit = get_bit(opcode_byte , 0);
-  u16 immediate = get_immediate(w_bit, 0, file);
+  u16 immediate = get_immediate(w_bit, 0, reader);
   sprintf(instruction + strlen(instruction), " ax, [%d]", immediate);
 }
 
-void accumulator_to_memory(char* instruction, u8 opcode_byte, FILE* file) {
+void accumulator_to_memory(char* instruction, u8 opcode_byte, MemoryReader *reader) {
   u8 w_bit = get_bit(opcode_byte , 0);
-  u16 immediate = get_immediate(w_bit, 0, file);
+  u16 immediate = get_immediate(w_bit, 0, reader);
   sprintf(instruction + strlen(instruction), " [%d], ax", immediate);
 }
 
-void immediate_to_accumulator(char* instruction, u8 opcode_byte, FILE* file) {
+void immediate_to_accumulator(char* instruction, u8 opcode_byte, MemoryReader *reader) {
   u8 w_bit = get_bit(opcode_byte , 0);
-  u16 immediate = get_immediate(w_bit, 0, file);
+  u16 immediate = get_immediate(w_bit, 0, reader);
   if (w_bit) {
     sprintf(instruction + strlen(instruction), " ax, %d", immediate);
   } else {
@@ -198,29 +207,29 @@ void immediate_to_accumulator(char* instruction, u8 opcode_byte, FILE* file) {
   }
 }
 
-void move_register_to_register(char* instruction, u8 opcode_byte, FILE* file) {
+void move_register_to_register(char* instruction, u8 opcode_byte, MemoryReader *reader) {
   sprintf(instruction, "mov");
-  register_to_register(instruction, opcode_byte, file, true, true);
+  register_to_register(instruction, opcode_byte, reader, true, true);
 }
 
-void move_immediate_to_register(char* instruction, u8 opcode_byte, FILE* file) {
+void move_immediate_to_register(char* instruction, u8 opcode_byte, MemoryReader *reader) {
   sprintf(instruction, "mov");
-  immediate_to_register(instruction, opcode_byte, file);
+  immediate_to_register(instruction, opcode_byte, reader);
 }
 
-void move_immediate_to_register_memory(char* instruction, u8 opcode_byte, FILE* file) {
+void move_immediate_to_register_memory(char* instruction, u8 opcode_byte, MemoryReader *reader) {
   sprintf(instruction, "mov");
-  immediate_to_register_memory(instruction, opcode_byte, file, false);
+  immediate_to_register_memory(instruction, opcode_byte, reader, false);
 }
 
-void move_memory_to_accumulator(char* instruction, u8 opcode_byte, FILE* file) {
+void move_memory_to_accumulator(char* instruction, u8 opcode_byte, MemoryReader *reader) {
   sprintf(instruction, "mov");
-  memory_to_accumulator(instruction, opcode_byte, file);
+  memory_to_accumulator(instruction, opcode_byte, reader);
 }
 
-void move_accumulator_to_memory(char* instruction, u8 opcode_byte, FILE* file) {
+void move_accumulator_to_memory(char* instruction, u8 opcode_byte, MemoryReader *reader) {
   sprintf(instruction, "mov");
-  accumulator_to_memory(instruction, opcode_byte, file);
+  accumulator_to_memory(instruction, opcode_byte, reader);
 }
 
 const char * get_op(u8 op) {
@@ -236,48 +245,49 @@ const char * get_op(u8 op) {
   return "";
 }
 
-void add_sub_cmp_register_to_register(char* instruction, u8 opcode_byte, FILE* file) {
+void add_sub_cmp_register_to_register(char* instruction, u8 opcode_byte, MemoryReader *reader) {
   u8 op = get_bits(opcode_byte, 3, 5);
   sprintf(instruction, get_op(op));
-  register_to_register(instruction, opcode_byte, file, true, true);
+  register_to_register(instruction, opcode_byte, reader, true, true);
 }
 
-void add_sub_cmp_immediate_to_register(char* instruction, u8 opcode_byte, FILE* file) {
-  u8 next_byte = (u8)fgetc(file);
+void add_sub_cmp_immediate_to_register(char* instruction, u8 opcode_byte, MemoryReader *reader) {
+  u8 next_byte;
+  peek(reader, &next_byte);
   u8 op = get_bits(next_byte, 3, 5);
-  ungetc(next_byte, file);
 
   sprintf(instruction, get_op(op));
-  immediate_to_register_memory(instruction, opcode_byte, file, true);
+  immediate_to_register_memory(instruction, opcode_byte, reader, true);
 }
 
-void add_sub_cmp_immediate_to_accumulator(char* instruction, u8 opcode_byte, FILE* file) {
+void add_sub_cmp_immediate_to_accumulator(char* instruction, u8 opcode_byte, MemoryReader *reader) {
   u8 op = get_bits(opcode_byte, 3, 5);
   sprintf(instruction, get_op(op));
-  immediate_to_accumulator(instruction, opcode_byte, file);
+  immediate_to_accumulator(instruction, opcode_byte, reader);
 }
 
-void pop_segment_register(char* instruction, u8 opcode_byte, FILE* file) {
+void pop_segment_register(char* instruction, u8 opcode_byte, MemoryReader *reader) {
   u8 reg = get_bits(opcode_byte, 3, 4);
   const char* address = segment_register[reg];
   sprintf(instruction, "pop %s", address);
 }
 
-void pop_register(char* instruction, u8 opcode_byte, FILE* file) {
+void pop_register(char* instruction, u8 opcode_byte, MemoryReader *reader) {
   u8 reg = get_bits(opcode_byte, 0, 2);
   const char* address = get_register(reg, 1);
   sprintf(instruction, "pop %s", address);
 }
 
-void pop_register_memory(char* instruction, u8 opcode_byte, FILE* file) {
+void pop_register_memory(char* instruction, u8 opcode_byte, MemoryReader *reader) {
   sprintf(instruction, "pop");
 
-  u8 byte = (u8)fgetc(file);
+  u8 byte;
+  read(reader, &byte);
   u8 mod = get_bits(byte, 6, 7);
   u8 rm = get_bits(byte, 0, 2);
 
   if (rm == 0b110 && mod == 0b00) {
-    u16 displacement = get_displacement(1, file);
+    u16 displacement = get_displacement(1, reader);
     sprintf(instruction + strlen(instruction), " word [%d]", displacement);
     return;
   }
@@ -288,9 +298,9 @@ void pop_register_memory(char* instruction, u8 opcode_byte, FILE* file) {
   const char* address = effective_address[rm];
 
   if (mod == 0b01) {
-    displacement = get_displacement(0, file);
+    displacement = get_displacement(0, reader);
   } else if (mod == 0b10) {
-    displacement = get_displacement(1, file);
+    displacement = get_displacement(1, reader);
   }
   if (displacement != 0) {
     sprintf(source, "[%s + %hd]", address, displacement);
@@ -301,15 +311,16 @@ void pop_register_memory(char* instruction, u8 opcode_byte, FILE* file) {
   sprintf(instruction + strlen(instruction), " word %s", source);
 }
 
-void push_register_memory(char* instruction, u8 opcode_byte, FILE* file) {
+void push_register_memory(char* instruction, u8 opcode_byte, MemoryReader *reader) {
   sprintf(instruction, "push");
 
-  u8 byte = (u8)fgetc(file);
+  u8 byte;
+  read(reader, &byte);
   u8 mod = get_bits(byte, 6, 7);
   u8 rm = get_bits(byte, 0, 2);
 
   if (rm == 0b110 && mod == 0b00) {
-    u16 displacement = get_displacement(1, file);
+    u16 displacement = get_displacement(1, reader);
     sprintf(instruction + strlen(instruction), " word [%d]", displacement);
     return;
   }
@@ -320,9 +331,9 @@ void push_register_memory(char* instruction, u8 opcode_byte, FILE* file) {
   const char* address = effective_address[rm];
 
   if (mod == 0b01) {
-    displacement = get_displacement(0, file);
+    displacement = get_displacement(0, reader);
   } else if (mod == 0b10) {
-    displacement = get_displacement(1, file);
+    displacement = get_displacement(1, reader);
   }
   if (displacement != 0) {
     sprintf(source, "[%s + %hd]", address, displacement);
@@ -333,35 +344,35 @@ void push_register_memory(char* instruction, u8 opcode_byte, FILE* file) {
   sprintf(instruction + strlen(instruction), " word %s", source);
 }
 
-void exchange_memory_with_register(char *instruction, u8 opcode_byte, FILE* file) {
+void exchange_memory_with_register(char *instruction, u8 opcode_byte, MemoryReader *reader) {
   sprintf(instruction, "xchg");
-  register_to_register(instruction, opcode_byte, file, true, true);
+  register_to_register(instruction, opcode_byte, reader, true, true);
 }
 
-void exchange_register_with_accumulator(char *instruction, u8 opcode_byte, FILE* file) {
+void exchange_register_with_accumulator(char *instruction, u8 opcode_byte, MemoryReader *reader) {
   sprintf(instruction, "xchg");
   u8 reg = get_bits(opcode_byte, 0, 2);
   sprintf(instruction + strlen(instruction), " ax, %s", get_register(reg, 1));
 }
 
-void lea_memory_with_register(char *instruction, u8 opcode_byte, FILE* file) {
+void lea_memory_with_register(char *instruction, u8 opcode_byte, MemoryReader *reader) {
   sprintf(instruction, "lea");
-  register_to_register(instruction, opcode_byte, file, false, true);
+  register_to_register(instruction, opcode_byte, reader, false, true);
 }
 
-void lds_memory_with_register(char *instruction, u8 opcode_byte, FILE* file) {
+void lds_memory_with_register(char *instruction, u8 opcode_byte, MemoryReader *reader) {
   sprintf(instruction, "lds");
-  register_to_register(instruction, opcode_byte, file, false, true);
+  register_to_register(instruction, opcode_byte, reader, false, true);
 }
 
-void les_memory_with_register(char *instruction, u8 opcode_byte, FILE* file) {
+void les_memory_with_register(char *instruction, u8 opcode_byte, MemoryReader *reader) {
   sprintf(instruction, "les");
-  register_to_register(instruction, opcode_byte, file, false, false);
+  register_to_register(instruction, opcode_byte, reader, false, false);
 }
 
-void in_fixed_port(char *instruction, u8 opcode_byte, FILE* file) {
+void in_fixed_port(char *instruction, u8 opcode_byte, MemoryReader *reader) {
   u8 w_bit = get_bit(opcode_byte, 0);
-  u16 data = get_immediate(0, 0, file);
+  u16 data = get_immediate(0, 0, reader);
   sprintf(instruction, "in %s, %hd", w_bit ? "ax" : "al", data);
 }
 
@@ -370,9 +381,9 @@ void in_variable_port(char *instruction, u8 opcode_byte) {
   sprintf(instruction, "in %s, dx", w_bit ? "ax" : "al");
 }
 
-void out_fixed_port(char *instruction, u8 opcode_byte, FILE* file) {
+void out_fixed_port(char *instruction, u8 opcode_byte, MemoryReader *reader) {
   u8 w_bit = get_bit(opcode_byte, 0);
-  u16 data = get_immediate(0, 0, file);
+  u16 data = get_immediate(0, 0, reader);
   sprintf(instruction, "out %hd, %s", data, w_bit ? "ax" : "al");
 }
 
@@ -381,8 +392,10 @@ void out_variable_port(char *instruction, u8 opcode_byte) {
   sprintf(instruction, "out dx, %s", w_bit ? "ax" : "al");
 }
 
-void conditional_jump(char* instruction, const char* jump, FILE* file) {
-  i8 data = fgetc(file);
+void conditional_jump(char* instruction, const char* jump, MemoryReader *reader) {
+  u8 byte;
+  read(reader, &byte);
+  i8 data = (i8)byte;
   if (data+2 > 0) {
     sprintf(instruction, "%s $+%d+0", jump, data+2);
   } else if (data+2 == 0) {
@@ -405,123 +418,120 @@ void print_instruction(CpuInstruction inst) {
   }
 }
 
+
 int main(int argc, char* argv[]) {
   if (argc < 2) {
     printf("Usage: %s <filename>\n", argv[0]);
     return 1;
   }
 
-  const char* filename = argv[1];
-  FILE* file = fopen(filename, "rb");
-
-  if (!file) {
-    perror("Error opening file");
+  MemoryReader reader = load_instruction_memory_from_file(argv[1]);
+  if (reader.memory->byte_count == 0) {
     return 1;
   }
 
   printf("bits 16\n");
 
-  i16 ch;
+  u8 byte;
   char instruction[128] = {};
-  while ((ch = fgetc(file)) != EOF) {
+  while (read(&reader, &byte)) {
     memset(instruction, 0, sizeof(instruction));
-    u8 byte = (u8)ch;
 
-    CpuInstruction inst = decode_instruction(byte, file);
+    CpuInstruction inst = decode_instruction(byte);
     if (inst.operation != "nop") {
       print_instruction(inst);
       continue;
     }
 
     if (byte == 0b11111111) {
-      push_register_memory(instruction, byte, file);
+      push_register_memory(instruction, byte, &reader);
     }
     if (byte == 0b10001111) {
-      pop_register_memory(instruction, byte, file);
+      pop_register_memory(instruction, byte, &reader);
     }
     else if (get_bits(byte, 5, 7) == 0b000 && get_bits(byte, 0, 2) == 0b111) {
-      pop_segment_register(instruction, byte, file);
+      pop_segment_register(instruction, byte, &reader);
     }
     else if (get_bits(byte, 3, 7) == 0b01011) {
-      pop_register(instruction, byte, file);
+      pop_register(instruction, byte, &reader);
     }
     else if (get_bits(byte, 1, 7) == 0b1000011) {
-      exchange_memory_with_register(instruction, byte, file);
+      exchange_memory_with_register(instruction, byte, &reader);
     }
     else if (get_bits(byte, 3, 7) == 0b10010) {
-      exchange_register_with_accumulator(instruction, byte, file);
+      exchange_register_with_accumulator(instruction, byte, &reader);
     }
     else if (get_bits(byte, 1, 7) == 0b1110010) {
-      in_fixed_port(instruction, byte, file);
+      in_fixed_port(instruction, byte, &reader);
     }
     else if (get_bits(byte, 1, 7) == 0b1110110) {
       in_variable_port(instruction, byte);
     }
     else if (get_bits(byte, 1, 7) == 0b1110011) {
-      out_fixed_port(instruction, byte, file);
+      out_fixed_port(instruction, byte, &reader);
     }
     else if (get_bits(byte, 1, 7) == 0b1110111) {
       out_variable_port(instruction, byte);
     }
     else if (byte == 0b01110100) {
-      conditional_jump(instruction, "je", file);
+      conditional_jump(instruction, "je", &reader);
     }
     else if (byte == 0b01111100) {
-      conditional_jump(instruction, "jl", file);
+      conditional_jump(instruction, "jl", &reader);
     }
     else if (byte == 0b01111110) {
-      conditional_jump(instruction, "jle", file);
+      conditional_jump(instruction, "jle", &reader);
     }
     else if (byte == 0b01110010) {
-      conditional_jump(instruction, "jb", file);
+      conditional_jump(instruction, "jb", &reader);
     }
     else if (byte == 0b01110110) {
-      conditional_jump(instruction, "jbe", file);
+      conditional_jump(instruction, "jbe", &reader);
     }
     else if (byte == 0b01111010) {
-      conditional_jump(instruction, "jp", file);
+      conditional_jump(instruction, "jp", &reader);
     }
     else if (byte == 0b01110000) {
-      conditional_jump(instruction, "jo", file);
+      conditional_jump(instruction, "jo", &reader);
     }
     else if (byte == 0b01111000) {
-      conditional_jump(instruction, "js", file);
+      conditional_jump(instruction, "js", &reader);
     }
     else if (byte == 0b01110101) {
-      conditional_jump(instruction, "jne", file);
+      conditional_jump(instruction, "jne", &reader);
     }
     else if (byte == 0b01111101) {
-      conditional_jump(instruction, "jnl", file);
+      conditional_jump(instruction, "jnl", &reader);
     }
     else if (byte == 0b01111111) {
-      conditional_jump(instruction, "jnle", file);
+      conditional_jump(instruction, "jnle", &reader);
     }
     else if (byte == 0b01110011) {
-      conditional_jump(instruction, "jnb", file);
+      conditional_jump(instruction, "jnb", &reader);
     }
     else if (byte == 0b01110111) {
-      conditional_jump(instruction, "jnbe", file);
+      conditional_jump(instruction, "jnbe", &reader);
     }
     else if (byte == 0b01111011) {
-      conditional_jump(instruction, "jnp", file);
+      conditional_jump(instruction, "jnp", &reader);
     }
     else if (byte == 0b01110001) {
-      conditional_jump(instruction, "jno", file);
+      conditional_jump(instruction, "jno", &reader);
     }
     else if (byte == 0b01111001) {
-      conditional_jump(instruction, "jns", file);
+      conditional_jump(instruction, "jns", &reader);
     }
     else if (byte == 0b11100010) {
-      conditional_jump(instruction, "loop", file);
+      conditional_jump(instruction, "loop", &reader);
     }
     else if (byte == 0b11100001) {
-      conditional_jump(instruction, "loopz", file);
+      conditional_jump(instruction, "loopz", &reader);
     }
     else if (byte == 0b11100000) {
-      conditional_jump(instruction, "loopnz", file);
+      conditional_jump(instruction, "loopnz", &reader);
     }
     else if (byte == 0b11100011) {
-      conditional_jump(instruction, "jcxz", file);
+      conditional_jump(instruction, "jcxz", &reader);
     }
     else if (byte == 0b11010111) {
       sprintf(instruction, "xlat");
@@ -539,55 +549,56 @@ int main(int argc, char* argv[]) {
       sprintf(instruction, "popf");
     }
     else if (byte == 0b10001101) {
-      lea_memory_with_register(instruction, byte, file);
+      lea_memory_with_register(instruction, byte, &reader);
     }
     else if (byte == 0b11000101) {
-      lds_memory_with_register(instruction, byte, file);
+      lds_memory_with_register(instruction, byte, &reader);
     }
     else if (byte == 0b11000100) {
-      les_memory_with_register(instruction, byte, file);
+      les_memory_with_register(instruction, byte, &reader);
     }
     else if (get_bits(byte, 2, 7) == 0b000000) {
-      add_sub_cmp_register_to_register(instruction, byte, file);
+      add_sub_cmp_register_to_register(instruction, byte, &reader);
     }
     else if (get_bits(byte, 2, 7) == 0b001010) {
-      add_sub_cmp_register_to_register(instruction, byte, file);
+      add_sub_cmp_register_to_register(instruction, byte, &reader);
     }
     else if (get_bits(byte, 2, 7) == 0b001110) {
-      add_sub_cmp_register_to_register(instruction, byte, file);
+      add_sub_cmp_register_to_register(instruction, byte, &reader);
     }
     else if (get_bits(byte, 2, 7) == 0b100000) {
-      add_sub_cmp_immediate_to_register(instruction, byte, file);
+      add_sub_cmp_immediate_to_register(instruction, byte, &reader);
     }
     else if (get_bits(byte, 1, 7) == 0b0000010) {
-      add_sub_cmp_immediate_to_accumulator(instruction, byte, file);
+      add_sub_cmp_immediate_to_accumulator(instruction, byte, &reader);
     }
     else if (get_bits(byte, 1, 7) == 0b0010110) {
-      add_sub_cmp_immediate_to_accumulator(instruction, byte, file);
+      add_sub_cmp_immediate_to_accumulator(instruction, byte, &reader);
     }
     else if (get_bits(byte, 1, 7) == 0b0011110) {
-      add_sub_cmp_immediate_to_accumulator(instruction, byte, file);
+      add_sub_cmp_immediate_to_accumulator(instruction, byte, &reader);
     }
     else if (get_bits(byte, 2, 7) == 0b100010) {
-      move_register_to_register(instruction, byte, file);
+      move_register_to_register(instruction, byte, &reader);
     }
     else if (get_bits(byte, 4, 7) == 0b1011) {
-      move_immediate_to_register(instruction, byte, file);
+      move_immediate_to_register(instruction, byte, &reader);
     }
     else if (get_bits(byte, 1, 7) == 0b1100011) {
-      move_immediate_to_register_memory(instruction, byte, file);
+      move_immediate_to_register_memory(instruction, byte, &reader);
     }
     else if (get_bits(byte, 1, 7) == 0b1010000) {
-      move_memory_to_accumulator(instruction, byte, file);
+      move_memory_to_accumulator(instruction, byte, &reader);
     }
     else if (get_bits(byte, 1, 7) == 0b1010001) {
-      move_accumulator_to_memory(instruction, byte, file);
+      move_accumulator_to_memory(instruction, byte, &reader);
     }
 
     printf("%s\n", instruction);
   }
 
-  fclose(file);
+  free(reader.memory->data);
+  free(reader.memory);
   return 0;
 }
 
