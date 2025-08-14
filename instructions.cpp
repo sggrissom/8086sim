@@ -11,8 +11,9 @@ struct CpuInstructionDefinition {
   BitsLocation opcode;
   BitsLocation segment_register;
   BitsLocation reg;
+  BitsLocation mod;
+  BitsLocation rm;
 };
-
 
 #define REG(reg, w_bit)  (register_file[reg + 8*w_bit])
 
@@ -25,12 +26,27 @@ CpuInstructionDefinition instruction_table[] = {
     .opcode={ .byte_count=0, .match=0b01010000, .mask=0b11111000 },
     .reg={ .byte_count=0, .mask=0b00000111 } 
   },
+  { .operation="push",
+    .opcode={ .byte_count=0, .match=0b11111111, .mask=0b11111111 },
+    .mod={ .byte_count=1, .mask=0b11000000, .shift=6 } ,
+    .rm={ .byte_count=1, .mask=0b00000111 }
+  },
 };
 
 struct CpuInstruction {
+  u16 instruction_address;
   const char* operation;
-  const char* operand1;
-  const char* operand2;
+
+  const char* reg;
+  const char* segment_reg;
+  u8 rm;
+  u8 mod;
+  u8 w_bit;
+  u8 s_bit;
+  u8 d_bit;
+  u16 displacement;
+  const char *effective_address;
+  i16 address_offset;
 };
 
 const char* segment_register[4] = {
@@ -44,18 +60,67 @@ const char* register_file[16] = {
   "sp", "bp", "si", "di",
 };
 
+const char* effective_address[8] = {
+  "bx + si", "bx + di", "bp + si", "bp + di",
+  "si", "di", "bp", "bx",
+};
+
 #define TABLE_LEN(x)  (sizeof(x)/sizeof(*(x)))
 
-CpuInstruction decode_instruction(u8 opcode) {
+bool load_byte_if_missing(u8 *bytes, MemoryReader *r, u8 byte_number) {
+  if (bytes[byte_number] == 0) {
+    read(r, &bytes[byte_number]);
+  }
+  return true;
+}
+
+CpuInstruction decode_instruction(u8 opcode, MemoryReader *r) {
+  u8 bytes[6] = {opcode};
   for (size_t i = 0; i < TABLE_LEN(instruction_table); i++) {
     const CpuInstructionDefinition *d = &instruction_table[i];
     if ((opcode & d->opcode.mask) == d->opcode.match) {
-      CpuInstruction inst = { .operation = d->operation};
+      CpuInstruction inst = { .instruction_address = r->ip, .operation = d->operation};
       if (d->segment_register.mask != 0) {
-        inst.operand1 = segment_register[(opcode & d->segment_register.mask) >> d->segment_register.shift];
+        load_byte_if_missing(bytes, r, d->segment_register.byte_count);
+        inst.segment_reg = segment_register[(opcode & d->segment_register.mask) >> d->segment_register.shift];
       }
       if (d->reg.mask != 0) {
-        inst.operand1 = REG(((opcode & d->reg.mask) >> d->reg.shift), 1);
+        load_byte_if_missing(bytes, r, d->reg.byte_count);
+        inst.reg = REG(((bytes[d->reg.byte_count] & d->reg.mask) >> d->reg.shift), 1);
+      }
+      if (d->mod.mask != 0) {
+        load_byte_if_missing(bytes, r, d->mod.byte_count);
+        inst.mod = (bytes[d->mod.byte_count] & d->mod.mask) >> d->mod.shift;
+      }
+      if (d->rm.mask != 0) {
+        load_byte_if_missing(bytes, r, d->rm.byte_count);
+        inst.rm = (bytes[d->rm.byte_count] & d->rm.mask) >> d->rm.shift;
+        inst.effective_address = effective_address[inst.rm];
+      }
+      if (inst.rm == 0b110 && inst.mod == 0b00) {
+        u8 byte;
+        read(r, &byte);
+        i16 dest = (u16)byte;
+        read(r, &byte);
+        dest = ((i8)byte << 8) | dest;
+        inst.displacement = dest;
+      }
+      if (inst.mod == 0b01) {
+        u8 byte;
+        read(r, &byte);
+        i16 dest = (u16)byte;
+        if (dest & 0x80) {
+          dest |= 0xFF00;
+        }
+        inst.address_offset = dest;
+      }
+      if (inst.mod == 0b10) {
+        u8 byte;
+        read(r, &byte);
+        i16 dest = (u16)byte;
+        read(r, &byte);
+        dest = ((i8)byte << 8) | dest;
+        inst.address_offset = dest;
       }
 
       return inst;

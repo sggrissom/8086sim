@@ -25,11 +25,6 @@ const char* opcode_instruction[3] = {
   "add", "sub", "cmp",
 };
 
-const char* effective_address[8] = {
-  "bx + si", "bx + di", "bp + si", "bp + di",
-  "si", "di", "bp", "bx",
-};
-
 const char* get_register(u8 reg, u8 w_bit) {
   return register_file[reg + 8*w_bit];
 }
@@ -311,39 +306,6 @@ void pop_register_memory(char* instruction, u8 opcode_byte, MemoryReader *reader
   sprintf(instruction + strlen(instruction), " word %s", source);
 }
 
-void push_register_memory(char* instruction, u8 opcode_byte, MemoryReader *reader) {
-  sprintf(instruction, "push");
-
-  u8 byte;
-  read(reader, &byte);
-  u8 mod = get_bits(byte, 6, 7);
-  u8 rm = get_bits(byte, 0, 2);
-
-  if (rm == 0b110 && mod == 0b00) {
-    u16 displacement = get_displacement(1, reader);
-    sprintf(instruction + strlen(instruction), " word [%d]", displacement);
-    return;
-  }
-
-  char source[20] = {};
-  char dest[20] = {};
-  short displacement = 0;
-  const char* address = effective_address[rm];
-
-  if (mod == 0b01) {
-    displacement = get_displacement(0, reader);
-  } else if (mod == 0b10) {
-    displacement = get_displacement(1, reader);
-  }
-  if (displacement != 0) {
-    sprintf(source, "[%s + %hd]", address, displacement);
-  } else {
-    sprintf(source, "[%s]", address);
-  }
-
-  sprintf(instruction + strlen(instruction), " word %s", source);
-}
-
 void exchange_memory_with_register(char *instruction, u8 opcode_byte, MemoryReader *reader) {
   sprintf(instruction, "xchg");
   register_to_register(instruction, opcode_byte, reader, true, true);
@@ -407,11 +369,20 @@ void conditional_jump(char* instruction, const char* jump, MemoryReader *reader)
 
 
 void print_instruction(CpuInstruction inst) {
-  if (inst.operand2) {
-    printf("%s %s %s\n", inst.operation, inst.operand1, inst.operand2);
+  if (inst.segment_reg) {
+    printf("%s %s\n", inst.operation, inst.segment_reg);
   }
-  else if (inst.operand1) {
-    printf("%s %s\n", inst.operation, inst.operand1);
+  else if (inst.reg) {
+    printf("%s %s\n", inst.operation, inst.reg);
+  }
+  else if (inst.displacement) {
+    printf("%s %s [%d]\n", inst.operation, "word", inst.displacement);
+  }
+  else if (inst.effective_address && inst.address_offset != 0) {
+    printf("%s word [%s + %hd]\n", inst.operation, inst.effective_address, inst.address_offset);
+  }
+  else if (inst.effective_address) {
+    printf("%s word [%s]\n", inst.operation, inst.effective_address);
   }
   else {
     printf("%s\n", inst.operation);
@@ -437,15 +408,12 @@ int main(int argc, char* argv[]) {
   while (read(&reader, &byte)) {
     memset(instruction, 0, sizeof(instruction));
 
-    CpuInstruction inst = decode_instruction(byte);
+    CpuInstruction inst = decode_instruction(byte, &reader);
     if (inst.operation != "nop") {
       print_instruction(inst);
       continue;
     }
 
-    if (byte == 0b11111111) {
-      push_register_memory(instruction, byte, &reader);
-    }
     if (byte == 0b10001111) {
       pop_register_memory(instruction, byte, &reader);
     }
