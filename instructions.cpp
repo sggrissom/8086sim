@@ -8,6 +8,7 @@ struct BitsLocation {
 
 struct CpuInstructionDefinition {
   const char* operation;
+  bool is_accumulator;
   BitsLocation opcode;
   BitsLocation segment_register;
   BitsLocation reg;
@@ -36,6 +37,19 @@ CpuInstructionDefinition instruction_table[] = {
     .mod={ .byte_count=1, .mask=0b11000000, .shift=6 } ,
     .rm={ .byte_count=1, .mask=0b00000111 }
   },
+  { .operation="pop",
+    .opcode={ .byte_count=0, .match=0b00000111, .mask=0b11100111 },
+    .segment_register={ .byte_count=0, .mask=0b00011000, .shift=3 } 
+  },
+  { .operation="pop",
+    .opcode={ .byte_count=0, .match=0b01011000, .mask=0b11111000 },
+    .reg={ .byte_count=0, .mask=0b00000111 } 
+  },
+  { .operation="xchg",
+    .is_accumulator = true,
+    .opcode={ .byte_count=0, .match=0b10010000, .mask=0b11111000 },
+    .reg={ .byte_count=0, .mask=0b00000111 }
+  },
 };
 
 struct CpuInstruction {
@@ -49,6 +63,7 @@ struct CpuInstruction {
   u8 w_bit;
   u8 s_bit;
   u8 d_bit;
+  u8 is_accumulator;
   u16 displacement;
   const char *effective_address;
   i16 address_offset;
@@ -83,6 +98,7 @@ CpuInstruction decode_instruction(u8 opcode, MemoryReader *r) {
   u8 bytes[6] = {opcode};
   for (size_t i = 0; i < TABLE_LEN(instruction_table); i++) {
     const CpuInstructionDefinition *d = &instruction_table[i];
+
     if ((opcode & d->opcode.mask) == d->opcode.match) {
       CpuInstruction inst = { .instruction_address = r->ip, .operation = d->operation};
       if (d->segment_register.mask != 0) {
@@ -126,6 +142,9 @@ CpuInstruction decode_instruction(u8 opcode, MemoryReader *r) {
         read(r, &byte);
         dest = ((i8)byte << 8) | dest;
         inst.address_offset = dest;
+      }
+      if (d->is_accumulator) {
+        inst.is_accumulator = true;
       }
 
       return inst;

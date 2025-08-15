@@ -261,27 +261,9 @@ void add_sub_cmp_immediate_to_accumulator(char* instruction, u8 opcode_byte, Mem
   immediate_to_accumulator(instruction, opcode_byte, reader);
 }
 
-void pop_segment_register(char* instruction, u8 opcode_byte, MemoryReader *reader) {
-  u8 reg = get_bits(opcode_byte, 3, 4);
-  const char* address = segment_register[reg];
-  sprintf(instruction, "pop %s", address);
-}
-
-void pop_register(char* instruction, u8 opcode_byte, MemoryReader *reader) {
-  u8 reg = get_bits(opcode_byte, 0, 2);
-  const char* address = get_register(reg, 1);
-  sprintf(instruction, "pop %s", address);
-}
-
 void exchange_memory_with_register(char *instruction, u8 opcode_byte, MemoryReader *reader) {
   sprintf(instruction, "xchg");
   register_to_register(instruction, opcode_byte, reader, true, true);
-}
-
-void exchange_register_with_accumulator(char *instruction, u8 opcode_byte, MemoryReader *reader) {
-  sprintf(instruction, "xchg");
-  u8 reg = get_bits(opcode_byte, 0, 2);
-  sprintf(instruction + strlen(instruction), " ax, %s", get_register(reg, 1));
 }
 
 void lea_memory_with_register(char *instruction, u8 opcode_byte, MemoryReader *reader) {
@@ -339,6 +321,9 @@ void print_instruction(CpuInstruction inst) {
   if (inst.segment_reg) {
     printf("%s %s\n", inst.operation, inst.segment_reg);
   }
+  else if (inst.reg && inst.is_accumulator) {
+    printf("%s ax, %s\n", inst.operation, inst.reg);
+  }
   else if (inst.reg) {
     printf("%s %s\n", inst.operation, inst.reg);
   }
@@ -381,17 +366,8 @@ int main(int argc, char* argv[]) {
       continue;
     }
 
-    if (get_bits(byte, 5, 7) == 0b000 && get_bits(byte, 0, 2) == 0b111) {
-      pop_segment_register(instruction, byte, &reader);
-    }
-    else if (get_bits(byte, 3, 7) == 0b01011) {
-      pop_register(instruction, byte, &reader);
-    }
-    else if (get_bits(byte, 1, 7) == 0b1000011) {
+    if (get_bits(byte, 1, 7) == 0b1000011) {
       exchange_memory_with_register(instruction, byte, &reader);
-    }
-    else if (get_bits(byte, 3, 7) == 0b10010) {
-      exchange_register_with_accumulator(instruction, byte, &reader);
     }
     else if (get_bits(byte, 1, 7) == 0b1110010) {
       in_fixed_port(instruction, byte, &reader);
