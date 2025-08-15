@@ -31,6 +31,11 @@ CpuInstructionDefinition instruction_table[] = {
     .mod={ .byte_count=1, .mask=0b11000000, .shift=6 } ,
     .rm={ .byte_count=1, .mask=0b00000111 }
   },
+  { .operation="pop",
+    .opcode={ .byte_count=0, .match=0b10001111, .mask=0b11111111 },
+    .mod={ .byte_count=1, .mask=0b11000000, .shift=6 } ,
+    .rm={ .byte_count=1, .mask=0b00000111 }
+  },
 };
 
 struct CpuInstruction {

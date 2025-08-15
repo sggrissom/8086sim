@@ -273,39 +273,6 @@ void pop_register(char* instruction, u8 opcode_byte, MemoryReader *reader) {
   sprintf(instruction, "pop %s", address);
 }
 
-void pop_register_memory(char* instruction, u8 opcode_byte, MemoryReader *reader) {
-  sprintf(instruction, "pop");
-
-  u8 byte;
-  read(reader, &byte);
-  u8 mod = get_bits(byte, 6, 7);
-  u8 rm = get_bits(byte, 0, 2);
-
-  if (rm == 0b110 && mod == 0b00) {
-    u16 displacement = get_displacement(1, reader);
-    sprintf(instruction + strlen(instruction), " word [%d]", displacement);
-    return;
-  }
-
-  char source[20] = {};
-  char dest[20] = {};
-  short displacement = 0;
-  const char* address = effective_address[rm];
-
-  if (mod == 0b01) {
-    displacement = get_displacement(0, reader);
-  } else if (mod == 0b10) {
-    displacement = get_displacement(1, reader);
-  }
-  if (displacement != 0) {
-    sprintf(source, "[%s + %hd]", address, displacement);
-  } else {
-    sprintf(source, "[%s]", address);
-  }
-
-  sprintf(instruction + strlen(instruction), " word %s", source);
-}
-
 void exchange_memory_with_register(char *instruction, u8 opcode_byte, MemoryReader *reader) {
   sprintf(instruction, "xchg");
   register_to_register(instruction, opcode_byte, reader, true, true);
@@ -414,10 +381,7 @@ int main(int argc, char* argv[]) {
       continue;
     }
 
-    if (byte == 0b10001111) {
-      pop_register_memory(instruction, byte, &reader);
-    }
-    else if (get_bits(byte, 5, 7) == 0b000 && get_bits(byte, 0, 2) == 0b111) {
+    if (get_bits(byte, 5, 7) == 0b000 && get_bits(byte, 0, 2) == 0b111) {
       pop_segment_register(instruction, byte, &reader);
     }
     else if (get_bits(byte, 3, 7) == 0b01011) {
