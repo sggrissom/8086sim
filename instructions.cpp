@@ -6,7 +6,14 @@ struct BitsLocation {
   u8 shift;
 };
 
+enum InstructionType {
+  Solo,
+  Register,
+  Memory,
+};
+
 struct CpuInstructionDefinition {
+  InstructionType type;
   const char* operation;
   bool is_accumulator;
   BitsLocation opcode;
@@ -19,33 +26,47 @@ struct CpuInstructionDefinition {
 #define REG(reg, w_bit)  (register_file[reg + 8*w_bit])
 
 CpuInstructionDefinition instruction_table[] = {
-  { .operation="push",
+  { 
+    .type=Register,
+    .operation="push",
     .opcode={ .byte_count=0, .match=0b00000110, .mask=0b11100111 },
     .segment_register={ .byte_count=0, .mask=0b00011000, .shift=3 } 
   },
-  { .operation="push",
+  {
+    .type=Register,
+    .operation="push",
     .opcode={ .byte_count=0, .match=0b01010000, .mask=0b11111000 },
     .reg={ .byte_count=0, .mask=0b00000111 } 
   },
-  { .operation="push",
+  {
+    .type=Memory,
+    .operation="push",
     .opcode={ .byte_count=0, .match=0b11111111, .mask=0b11111111 },
     .mod={ .byte_count=1, .mask=0b11000000, .shift=6 } ,
     .rm={ .byte_count=1, .mask=0b00000111 }
   },
-  { .operation="pop",
+  {
+    .type=Memory,
+    .operation="pop",
     .opcode={ .byte_count=0, .match=0b10001111, .mask=0b11111111 },
     .mod={ .byte_count=1, .mask=0b11000000, .shift=6 } ,
     .rm={ .byte_count=1, .mask=0b00000111 }
   },
-  { .operation="pop",
+  {
+    .type=Register,
+    .operation="pop",
     .opcode={ .byte_count=0, .match=0b00000111, .mask=0b11100111 },
     .segment_register={ .byte_count=0, .mask=0b00011000, .shift=3 } 
   },
-  { .operation="pop",
+  {
+    .type=Register,
+    .operation="pop",
     .opcode={ .byte_count=0, .match=0b01011000, .mask=0b11111000 },
     .reg={ .byte_count=0, .mask=0b00000111 } 
   },
-  { .operation="xchg",
+  {
+    .type=Register,
+    .operation="xchg",
     .is_accumulator = true,
     .opcode={ .byte_count=0, .match=0b10010000, .mask=0b11111000 },
     .reg={ .byte_count=0, .mask=0b00000111 }
@@ -54,6 +75,7 @@ CpuInstructionDefinition instruction_table[] = {
 
 struct CpuInstruction {
   u16 instruction_address;
+  InstructionType type;
   const char* operation;
 
   const char* reg;
@@ -107,7 +129,11 @@ CpuInstruction decode_instruction(u8 opcode, MemoryReader *r) {
     const CpuInstructionDefinition *d = &instruction_table[i];
 
     if ((opcode & d->opcode.mask) == d->opcode.match) {
-      CpuInstruction inst = { .instruction_address = r->ip, .operation = d->operation};
+      CpuInstruction inst = {
+        .instruction_address = r->ip,
+        .type = d->type,
+        .operation = d->operation
+      };
       if (d->segment_register.mask != 0) {
         inst.segment_reg = segment_register[get_bits(bytes, r, d->segment_register)];
       }

@@ -318,26 +318,34 @@ void conditional_jump(char* instruction, const char* jump, MemoryReader *reader)
 
 
 void print_instruction(CpuInstruction inst) {
-  if (inst.segment_reg) {
-    printf("%s %s\n", inst.operation, inst.segment_reg);
-  }
-  else if (inst.reg && inst.is_accumulator) {
-    printf("%s ax, %s\n", inst.operation, inst.reg);
-  }
-  else if (inst.reg) {
-    printf("%s %s\n", inst.operation, inst.reg);
-  }
-  else if (inst.displacement) {
-    printf("%s %s [%d]\n", inst.operation, "word", inst.displacement);
-  }
-  else if (inst.effective_address && inst.address_offset != 0) {
-    printf("%s word [%s + %hd]\n", inst.operation, inst.effective_address, inst.address_offset);
-  }
-  else if (inst.effective_address) {
-    printf("%s word [%s]\n", inst.operation, inst.effective_address);
-  }
-  else {
-    printf("%s\n", inst.operation);
+  switch (inst.type) {
+    case Solo:
+      printf("%s\n", inst.operation);
+      break;
+    case Register:
+      if (inst.segment_reg) {
+        printf("%s %s\n", inst.operation, inst.segment_reg);
+      }
+      else if (inst.reg && inst.is_accumulator) {
+        printf("%s ax, %s\n", inst.operation, inst.reg);
+      }
+      else if (inst.reg) {
+        printf("%s %s\n", inst.operation, inst.reg);
+      }
+      break;
+    case Memory:
+      if (inst.displacement) {
+        printf("%s %s [%d]\n", inst.operation, "word", inst.displacement);
+      }
+      else if (inst.effective_address && inst.address_offset != 0) {
+        printf("%s word [%s + %hd]\n", inst.operation, inst.effective_address, inst.address_offset);
+      }
+      else if (inst.effective_address) {
+        printf("%s word [%s]\n", inst.operation, inst.effective_address);
+      }
+      break;
+    default:
+      break;
   }
 }
 
