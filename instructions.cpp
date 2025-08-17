@@ -10,6 +10,7 @@ enum InstructionType {
   Solo,
   Register,
   Memory,
+  ConditionalJump,
 };
 
 struct CpuInstructionDefinition {
@@ -70,6 +71,131 @@ CpuInstructionDefinition instruction_table[] = {
     .is_accumulator = true,
     .opcode={ .byte_count=0, .match=0b10010000, .mask=0b11111000 },
     .reg={ .byte_count=0, .mask=0b00000111 }
+  },
+  {
+    .type=ConditionalJump,
+    .operation="je",
+    .opcode={ .byte_count=0, .match=0b01110100, .mask=0b11111111 }
+  },
+  {
+    .type=ConditionalJump,
+    .operation="jl",
+    .opcode={ .byte_count=0, .match=0b01111100, .mask=0b11111111 }
+  },
+  {
+    .type=ConditionalJump,
+    .operation="jle",
+    .opcode={ .byte_count=0, .match=0b01111110, .mask=0b11111111 }
+  },
+  {
+    .type=ConditionalJump,
+    .operation="jb",
+    .opcode={ .byte_count=0, .match=0b01110010, .mask=0b11111111 }
+  },
+  {
+    .type=ConditionalJump,
+    .operation="jbe",
+    .opcode={ .byte_count=0, .match=0b01110110, .mask=0b11111111 }
+  },
+  {
+    .type=ConditionalJump,
+    .operation="jp",
+    .opcode={ .byte_count=0, .match=0b01111010, .mask=0b11111111 }
+  },
+  {
+    .type=ConditionalJump,
+    .operation="jo",
+    .opcode={ .byte_count=0, .match=0b01110000, .mask=0b11111111 }
+  },
+  {
+    .type=ConditionalJump,
+    .operation="js",
+    .opcode={ .byte_count=0, .match=0b01111000, .mask=0b11111111 }
+  },
+  {
+    .type=ConditionalJump,
+    .operation="jne",
+    .opcode={ .byte_count=0, .match=0b01110101, .mask=0b11111111 }
+  },
+  {
+    .type=ConditionalJump,
+    .operation="jnl",
+    .opcode={ .byte_count=0, .match=0b01111101, .mask=0b11111111 }
+  },
+  {
+    .type=ConditionalJump,
+    .operation="jnle",
+    .opcode={ .byte_count=0, .match=0b01111111, .mask=0b11111111 }
+  },
+  {
+    .type=ConditionalJump,
+    .operation="jnb",
+    .opcode={ .byte_count=0, .match=0b01110011, .mask=0b11111111 }
+  },
+  {
+    .type=ConditionalJump,
+    .operation="jnbe",
+    .opcode={ .byte_count=0, .match=0b01110111, .mask=0b11111111 }
+  },
+  {
+    .type=ConditionalJump,
+    .operation="jnp",
+    .opcode={ .byte_count=0, .match=0b01111011, .mask=0b11111111 }
+  },
+  {
+    .type=ConditionalJump,
+    .operation="jno",
+    .opcode={ .byte_count=0, .match=0b01110001, .mask=0b11111111 }
+  },
+  {
+    .type=ConditionalJump,
+    .operation="jns",
+    .opcode={ .byte_count=0, .match=0b01111001, .mask=0b11111111 }
+  },
+  {
+    .type=ConditionalJump,
+    .operation="loop",
+    .opcode={ .byte_count=0, .match=0b11100010, .mask=0b11111111 }
+  },
+  {
+    .type=ConditionalJump,
+    .operation="loopz",
+    .opcode={ .byte_count=0, .match=0b11100001, .mask=0b11111111 }
+  },
+  {
+    .type=ConditionalJump,
+    .operation="loopnz",
+    .opcode={ .byte_count=0, .match=0b11100000, .mask=0b11111111 }
+  },
+  {
+    .type=ConditionalJump,
+    .operation="jcxz",
+    .opcode={ .byte_count=0, .match=0b11100011, .mask=0b11111111 }
+  },
+  {
+    .type=Solo,
+    .operation="xlat",
+    .opcode={ .byte_count=0, .match=0b11010111, .mask=0b11111111 }
+  },
+  {
+    .type=Solo,
+    .operation="lahf",
+    .opcode={ .byte_count=0, .match=0b10011111, .mask=0b11111111 }
+  },
+  {
+    .type=Solo,
+    .operation="sahf",
+    .opcode={ .byte_count=0, .match=0b10011110, .mask=0b11111111 }
+  },
+  {
+    .type=Solo,
+    .operation="pushf",
+    .opcode={ .byte_count=0, .match=0b10011100, .mask=0b11111111 }
+  },
+  {
+    .type=Solo,
+    .operation="popf",
+    .opcode={ .byte_count=0, .match=0b10011101, .mask=0b11111111 }
   },
 };
 
@@ -174,6 +300,11 @@ CpuInstruction decode_instruction(u8 opcode, MemoryReader *r) {
       }
       if (d->is_accumulator) {
         inst.is_accumulator = true;
+      }
+      if (d->type == ConditionalJump) {
+        u8 byte;
+        read(r, &byte);
+        inst.address_offset = byte;
       }
 
       return inst;

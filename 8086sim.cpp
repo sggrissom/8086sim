@@ -303,52 +303,55 @@ void out_variable_port(char *instruction, u8 opcode_byte) {
   sprintf(instruction, "out dx, %s", w_bit ? "ax" : "al");
 }
 
-void conditional_jump(char* instruction, const char* jump, MemoryReader *reader) {
-  u8 byte;
-  read(reader, &byte);
-  i8 data = (i8)byte;
-  if (data+2 > 0) {
-    sprintf(instruction, "%s $+%d+0", jump, data+2);
-  } else if (data+2 == 0) {
-    sprintf(instruction, "%s $+0", jump);
-  } else {
-    sprintf(instruction, "%s $%d+0", jump, data+2);
-  }
-}
-
-
 void print_instruction(CpuInstruction inst) {
   switch (inst.type) {
     case Solo:
-      printf("%s\n", inst.operation);
-      break;
+      {
+        printf("%s\n", inst.operation);
+        break;
+      }
     case Register:
-      if (inst.segment_reg) {
-        printf("%s %s\n", inst.operation, inst.segment_reg);
+      {
+        if (inst.segment_reg) {
+          printf("%s %s\n", inst.operation, inst.segment_reg);
+        }
+        else if (inst.reg && inst.is_accumulator) {
+          printf("%s ax, %s\n", inst.operation, inst.reg);
+        }
+        else if (inst.reg) {
+          printf("%s %s\n", inst.operation, inst.reg);
+        }
+        break;
       }
-      else if (inst.reg && inst.is_accumulator) {
-        printf("%s ax, %s\n", inst.operation, inst.reg);
-      }
-      else if (inst.reg) {
-        printf("%s %s\n", inst.operation, inst.reg);
-      }
-      break;
     case Memory:
-      if (inst.displacement) {
-        printf("%s %s [%d]\n", inst.operation, "word", inst.displacement);
+      {
+        if (inst.displacement) {
+          printf("%s %s [%d]\n", inst.operation, "word", inst.displacement);
+        }
+        else if (inst.effective_address && inst.address_offset != 0) {
+          printf("%s word [%s + %hd]\n", inst.operation, inst.effective_address, inst.address_offset);
+        }
+        else if (inst.effective_address) {
+          printf("%s word [%s]\n", inst.operation, inst.effective_address);
+        }
+        break;
       }
-      else if (inst.effective_address && inst.address_offset != 0) {
-        printf("%s word [%s + %hd]\n", inst.operation, inst.effective_address, inst.address_offset);
+    case ConditionalJump:
+      {
+        i8 jump_data = (i8)inst.address_offset;
+        if (jump_data+2 > 0) {
+          printf("%s $+%d+0\n", inst.operation, jump_data+2);
+        } else if (jump_data+2 == 0) {
+          printf("%s $+0\n", inst.operation);
+        } else {
+          printf("%s $%d+0\n", inst.operation, jump_data+2);
+        }
+        break;
       }
-      else if (inst.effective_address) {
-        printf("%s word [%s]\n", inst.operation, inst.effective_address);
-      }
-      break;
     default:
       break;
   }
 }
-
 
 int main(int argc, char* argv[]) {
   if (argc < 2) {
@@ -388,81 +391,6 @@ int main(int argc, char* argv[]) {
     }
     else if (get_bits(byte, 1, 7) == 0b1110111) {
       out_variable_port(instruction, byte);
-    }
-    else if (byte == 0b01110100) {
-      conditional_jump(instruction, "je", &reader);
-    }
-    else if (byte == 0b01111100) {
-      conditional_jump(instruction, "jl", &reader);
-    }
-    else if (byte == 0b01111110) {
-      conditional_jump(instruction, "jle", &reader);
-    }
-    else if (byte == 0b01110010) {
-      conditional_jump(instruction, "jb", &reader);
-    }
-    else if (byte == 0b01110110) {
-      conditional_jump(instruction, "jbe", &reader);
-    }
-    else if (byte == 0b01111010) {
-      conditional_jump(instruction, "jp", &reader);
-    }
-    else if (byte == 0b01110000) {
-      conditional_jump(instruction, "jo", &reader);
-    }
-    else if (byte == 0b01111000) {
-      conditional_jump(instruction, "js", &reader);
-    }
-    else if (byte == 0b01110101) {
-      conditional_jump(instruction, "jne", &reader);
-    }
-    else if (byte == 0b01111101) {
-      conditional_jump(instruction, "jnl", &reader);
-    }
-    else if (byte == 0b01111111) {
-      conditional_jump(instruction, "jnle", &reader);
-    }
-    else if (byte == 0b01110011) {
-      conditional_jump(instruction, "jnb", &reader);
-    }
-    else if (byte == 0b01110111) {
-      conditional_jump(instruction, "jnbe", &reader);
-    }
-    else if (byte == 0b01111011) {
-      conditional_jump(instruction, "jnp", &reader);
-    }
-    else if (byte == 0b01110001) {
-      conditional_jump(instruction, "jno", &reader);
-    }
-    else if (byte == 0b01111001) {
-      conditional_jump(instruction, "jns", &reader);
-    }
-    else if (byte == 0b11100010) {
-      conditional_jump(instruction, "loop", &reader);
-    }
-    else if (byte == 0b11100001) {
-      conditional_jump(instruction, "loopz", &reader);
-    }
-    else if (byte == 0b11100000) {
-      conditional_jump(instruction, "loopnz", &reader);
-    }
-    else if (byte == 0b11100011) {
-      conditional_jump(instruction, "jcxz", &reader);
-    }
-    else if (byte == 0b11010111) {
-      sprintf(instruction, "xlat");
-    }
-    else if (byte == 0b10011111) {
-      sprintf(instruction, "lahf");
-    }
-    else if (byte == 0b10011110) {
-      sprintf(instruction, "sahf");
-    }
-    else if (byte == 0b10011100) {
-      sprintf(instruction, "pushf");
-    }
-    else if (byte == 0b10011101) {
-      sprintf(instruction, "popf");
     }
     else if (byte == 0b10001101) {
       lea_memory_with_register(instruction, byte, &reader);
