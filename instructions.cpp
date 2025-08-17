@@ -94,6 +94,13 @@ bool load_byte_if_missing(u8 *bytes, MemoryReader *r, u8 byte_number) {
   return true;
 }
 
+
+static u8 get_bits(u8 *bytes, MemoryReader *r, BitsLocation location) {
+  load_byte_if_missing(bytes, r, location.byte_count);
+  return (bytes[location.byte_count] & location.mask) >> location.shift;
+}
+    
+
 CpuInstruction decode_instruction(u8 opcode, MemoryReader *r) {
   u8 bytes[6] = {opcode};
   for (size_t i = 0; i < TABLE_LEN(instruction_table); i++) {
@@ -102,20 +109,16 @@ CpuInstruction decode_instruction(u8 opcode, MemoryReader *r) {
     if ((opcode & d->opcode.mask) == d->opcode.match) {
       CpuInstruction inst = { .instruction_address = r->ip, .operation = d->operation};
       if (d->segment_register.mask != 0) {
-        load_byte_if_missing(bytes, r, d->segment_register.byte_count);
-        inst.segment_reg = segment_register[(opcode & d->segment_register.mask) >> d->segment_register.shift];
+        inst.segment_reg = segment_register[get_bits(bytes, r, d->segment_register)];
       }
       if (d->reg.mask != 0) {
-        load_byte_if_missing(bytes, r, d->reg.byte_count);
-        inst.reg = REG(((bytes[d->reg.byte_count] & d->reg.mask) >> d->reg.shift), 1);
+        inst.reg = REG(get_bits(bytes, r, d->reg), 1);
       }
       if (d->mod.mask != 0) {
-        load_byte_if_missing(bytes, r, d->mod.byte_count);
-        inst.mod = (bytes[d->mod.byte_count] & d->mod.mask) >> d->mod.shift;
+        inst.mod = get_bits(bytes, r, d->mod);
       }
       if (d->rm.mask != 0) {
-        load_byte_if_missing(bytes, r, d->rm.byte_count);
-        inst.rm = (bytes[d->rm.byte_count] & d->rm.mask) >> d->rm.shift;
+        inst.rm = get_bits(bytes, r, d->rm);
         inst.effective_address = effective_address[inst.rm];
       }
       if (inst.rm == 0b110 && inst.mod == 0b00) {
