@@ -1,5 +1,7 @@
 
 struct BitsLocation {
+  u8 overriden;
+  u8 overriden_value;
   u8 byte_count;
   u8 match;
   u8 mask;
@@ -10,18 +12,23 @@ enum InstructionType {
   Solo,
   Register,
   Memory,
+  Register_Memory,
   ConditionalJump,
 };
 
 struct CpuInstructionDefinition {
   InstructionType type;
   const char* operation;
+  u8 min_byte_count;
   bool is_accumulator;
   BitsLocation opcode;
   BitsLocation segment_register;
   BitsLocation reg;
   BitsLocation mod;
   BitsLocation rm;
+  BitsLocation w_bit;
+  BitsLocation d_bit;
+  BitsLocation s_bit;
 };
 
 #define REG(reg, w_bit)  (register_file[reg + 8*w_bit])
@@ -37,18 +44,21 @@ CpuInstructionDefinition instruction_table[] = {
     .type=Register,
     .operation="push",
     .opcode={ .byte_count=0, .match=0b01010000, .mask=0b11111000 },
-    .reg={ .byte_count=0, .mask=0b00000111 } 
+    .reg={ .byte_count=0, .mask=0b00000111 },
+    .w_bit={ .overriden=true, .overriden_value = 1 }
   },
   {
     .type=Memory,
     .operation="push",
+    .min_byte_count=2,
     .opcode={ .byte_count=0, .match=0b11111111, .mask=0b11111111 },
     .mod={ .byte_count=1, .mask=0b11000000, .shift=6 } ,
-    .rm={ .byte_count=1, .mask=0b00000111 }
+    .rm={ .byte_count=1, .mask=0b00000111 },
   },
   {
     .type=Memory,
     .operation="pop",
+    .min_byte_count=2,
     .opcode={ .byte_count=0, .match=0b10001111, .mask=0b11111111 },
     .mod={ .byte_count=1, .mask=0b11000000, .shift=6 } ,
     .rm={ .byte_count=1, .mask=0b00000111 }
@@ -63,14 +73,16 @@ CpuInstructionDefinition instruction_table[] = {
     .type=Register,
     .operation="pop",
     .opcode={ .byte_count=0, .match=0b01011000, .mask=0b11111000 },
-    .reg={ .byte_count=0, .mask=0b00000111 } 
+    .reg={ .byte_count=0, .mask=0b00000111 },
+    .w_bit={ .overriden=true, .overriden_value = 1 }
   },
   {
     .type=Register,
     .operation="xchg",
     .is_accumulator = true,
     .opcode={ .byte_count=0, .match=0b10010000, .mask=0b11111000 },
-    .reg={ .byte_count=0, .mask=0b00000111 }
+    .reg={ .byte_count=0, .mask=0b00000111 },
+    .w_bit={ .overriden=true, .overriden_value = 1 }
   },
   {
     .type=ConditionalJump,
@@ -197,6 +209,17 @@ CpuInstructionDefinition instruction_table[] = {
     .operation="popf",
     .opcode={ .byte_count=0, .match=0b10011101, .mask=0b11111111 }
   },
+  {
+    .type=Register_Memory,
+    .operation="mov",
+    .min_byte_count=2,
+    .opcode={ .byte_count=0, .match=0b10001000, .mask=0b11111100 },
+    .reg={ .byte_count=1, .mask=0b00111000, .shift=3 },
+    .mod={ .byte_count=1, .mask=0b11000000, .shift=6 },
+    .rm={ .byte_count=1, .mask=0b00000111 },
+    .w_bit={ .byte_count=0, .mask=0b00000001 },
+    .d_bit={ .byte_count=0, .mask=0b00000010, .shift=1 }
+  },
 };
 
 struct CpuInstruction {
@@ -204,7 +227,8 @@ struct CpuInstruction {
   InstructionType type;
   const char* operation;
 
-  const char* reg;
+  const char* source;
+  const char* dest;
   const char* segment_reg;
   u8 rm;
   u8 mod;
@@ -213,6 +237,7 @@ struct CpuInstruction {
   u8 d_bit;
   u8 is_accumulator;
   u16 displacement;
+  u16 immediate;
   const char *effective_address;
   i16 address_offset;
 };
@@ -235,19 +260,38 @@ const char* effective_address[8] = {
 
 #define TABLE_LEN(x)  (sizeof(x)/sizeof(*(x)))
 
-bool load_byte_if_missing(u8 *bytes, MemoryReader *r, u8 byte_number) {
-  if (bytes[byte_number] == 0) {
-    read(r, &bytes[byte_number]);
-  }
-  return true;
-}
-
-
 static u8 get_bits(u8 *bytes, MemoryReader *r, BitsLocation location) {
-  load_byte_if_missing(bytes, r, location.byte_count);
+  if (location.overriden) return location.overriden_value;
   return (bytes[location.byte_count] & location.mask) >> location.shift;
 }
-    
+
+i16 get_displacement(u8 w_bit, MemoryReader *reader) {
+  u8 byte;
+  read(reader, &byte);
+  i16 dest = (u16)byte;
+  if (w_bit) {
+    u8 next_byte;
+    read(reader, &next_byte);
+    dest = ((i8)next_byte << 8) | dest;
+  } else if (dest & 0x80) {
+    dest |= 0xFF00;
+  }
+  return dest;
+}
+
+u16 get_immediate(u8 w_bit, u8 s_bit, MemoryReader *reader) {
+  u8 byte;
+  read(reader, &byte);
+  u16 dest = (u16)byte;
+  if (w_bit) {
+    u8 next_byte;
+    read(reader, &next_byte);
+    dest = (next_byte << 8) | dest;
+  } else if (s_bit && (dest & 0x80)) {
+    dest |= 0xFF00;
+  }
+  return dest;
+}
 
 CpuInstruction decode_instruction(u8 opcode, MemoryReader *r) {
   u8 bytes[6] = {opcode};
@@ -260,11 +304,24 @@ CpuInstruction decode_instruction(u8 opcode, MemoryReader *r) {
         .type = d->type,
         .operation = d->operation
       };
+      for (int i = 1; i < d->min_byte_count; ++i) {
+        read(r, &bytes[i]);
+      }
+
       if (d->segment_register.mask != 0) {
         inst.segment_reg = segment_register[get_bits(bytes, r, d->segment_register)];
       }
+      if (d->w_bit.mask != 0 || d->w_bit.overriden) {
+        inst.w_bit = get_bits(bytes, r, d->w_bit);
+      }
+      if (d->d_bit.mask != 0) {
+        inst.d_bit = get_bits(bytes, r, d->d_bit);
+      }
+      if (d->s_bit.mask != 0) {
+        inst.s_bit = get_bits(bytes, r, d->s_bit);
+      }
       if (d->reg.mask != 0) {
-        inst.reg = REG(get_bits(bytes, r, d->reg), 1);
+        inst.source = REG(get_bits(bytes, r, d->reg), inst.w_bit);
       }
       if (d->mod.mask != 0) {
         inst.mod = get_bits(bytes, r, d->mod);
@@ -273,38 +330,50 @@ CpuInstruction decode_instruction(u8 opcode, MemoryReader *r) {
         inst.rm = get_bits(bytes, r, d->rm);
         inst.effective_address = effective_address[inst.rm];
       }
-      if (inst.rm == 0b110 && inst.mod == 0b00) {
-        u8 byte;
-        read(r, &byte);
-        i16 dest = (u16)byte;
-        read(r, &byte);
-        dest = ((i8)byte << 8) | dest;
-        inst.displacement = dest;
-      }
-      if (inst.mod == 0b01) {
-        u8 byte;
-        read(r, &byte);
-        i16 dest = (u16)byte;
-        if (dest & 0x80) {
-          dest |= 0xFF00;
+      if (inst.type == Memory) {
+        if (inst.rm == 0b110 && inst.mod == 0b00) {
+          u8 byte;
+          read(r, &byte);
+          i16 dest = (u16)byte;
+          read(r, &byte);
+          dest = ((i8)byte << 8) | dest;
+          inst.displacement = dest;
         }
-        inst.address_offset = dest;
-      }
-      if (inst.mod == 0b10) {
-        u8 byte;
-        read(r, &byte);
-        i16 dest = (u16)byte;
-        read(r, &byte);
-        dest = ((i8)byte << 8) | dest;
-        inst.address_offset = dest;
-      }
-      if (d->is_accumulator) {
-        inst.is_accumulator = true;
+        if (inst.mod == 0b01) {
+          inst.address_offset = get_displacement(0, r);
+        }
+        if (inst.mod == 0b10) {
+          inst.address_offset = get_displacement(1, r);
+        }
       }
       if (d->type == ConditionalJump) {
         u8 byte;
         read(r, &byte);
         inst.address_offset = byte;
+      }
+      if (inst.type == Register_Memory) {
+        if (inst.mod == 0b11) {
+          inst.dest = REG(inst.rm, inst.w_bit);
+          if (inst.d_bit == 0) {
+            const char * source = inst.source;
+            inst.source = inst.dest;
+            inst.dest = source;
+          }
+          return inst;
+        }
+        if (inst.rm == 0b110 && inst.mod == 0b00) {
+          inst.immediate = get_immediate(inst.w_bit, 0, r);
+        } else {
+          inst.dest = effective_address[inst.rm];
+          if (inst.mod == 0b01) {
+            inst.displacement = get_displacement(0, r);
+          } else if (inst.mod == 0b10) {
+            inst.displacement = get_displacement(1, r);
+          }
+        }
+      }
+      if (d->is_accumulator) {
+        inst.is_accumulator = true;
       }
 
       return inst;

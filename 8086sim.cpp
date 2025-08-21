@@ -33,34 +33,7 @@ void print_byte(u8 byte) {
     for (int i = 7; i >= 0; i--) {
         printf("%c", (byte >> i) & 1 ? '1' : '0');
     }
-}
-
-u16 get_immediate(u8 w_bit, u8 s_bit, MemoryReader *reader) {
-  u8 byte;
-  read(reader, &byte);
-  u16 dest = (u16)byte;
-  if (w_bit) {
-    u8 next_byte;
-    read(reader, &next_byte);
-    dest = (next_byte << 8) | dest;
-  } else if (s_bit && (dest & 0x80)) {
-    dest |= 0xFF00;
-  }
-  return dest;
-}
-
-i16 get_displacement(u8 w_bit, MemoryReader *reader) {
-  u8 byte;
-  read(reader, &byte);
-  i16 dest = (u16)byte;
-  if (w_bit) {
-    u8 next_byte;
-    read(reader, &next_byte);
-    dest = ((i8)next_byte << 8) | dest;
-  } else if (dest & 0x80) {
-    dest |= 0xFF00;
-  }
-  return dest;
+    printf("\n");
 }
 
 void immediate_to_register(char* instruction, u8 opcode_byte, MemoryReader *reader) {
@@ -303,6 +276,16 @@ void out_variable_port(char *instruction, u8 opcode_byte) {
   sprintf(instruction, "out dx, %s", w_bit ? "ax" : "al");
 }
 
+void print_address(CpuInstruction inst) {
+    if (inst.displacement > 0) {
+      printf("[%s + %hd]", inst.dest, inst.displacement);
+    } else if (inst.displacement < 0) {
+      printf("[%s - %hd]", inst.dest, -inst.displacement);
+    } else {
+      printf("[%s]", inst.dest);
+    }
+}
+
 void print_instruction(CpuInstruction inst) {
   switch (inst.type) {
     case Solo:
@@ -315,11 +298,11 @@ void print_instruction(CpuInstruction inst) {
         if (inst.segment_reg) {
           printf("%s %s\n", inst.operation, inst.segment_reg);
         }
-        else if (inst.reg && inst.is_accumulator) {
-          printf("%s ax, %s\n", inst.operation, inst.reg);
+        else if (inst.source && inst.is_accumulator) {
+          printf("%s ax, %s\n", inst.operation, inst.source);
         }
-        else if (inst.reg) {
-          printf("%s %s\n", inst.operation, inst.reg);
+        else if (inst.source) {
+          printf("%s %s\n", inst.operation, inst.source);
         }
         break;
       }
@@ -328,10 +311,10 @@ void print_instruction(CpuInstruction inst) {
         if (inst.displacement) {
           printf("%s %s [%d]\n", inst.operation, "word", inst.displacement);
         }
-        else if (inst.effective_address && inst.address_offset != 0) {
+        else if (inst.address_offset != 0) {
           printf("%s word [%s + %hd]\n", inst.operation, inst.effective_address, inst.address_offset);
         }
-        else if (inst.effective_address) {
+        else {
           printf("%s word [%s]\n", inst.operation, inst.effective_address);
         }
         break;
@@ -345,6 +328,23 @@ void print_instruction(CpuInstruction inst) {
           printf("%s $+0\n", inst.operation);
         } else {
           printf("%s $%d+0\n", inst.operation, jump_data+2);
+        }
+        break;
+      }
+    case Register_Memory:
+      {
+        if (inst.mod == 0b11) {
+          printf("%s %s, %s\n", inst.operation, inst.source, inst.dest);
+        } else if (inst.rm == 0b110 && inst.mod == 0b00) {
+          printf("%s %s, [%d]\n", inst.operation, inst.source, inst.immediate);
+        } else if (inst.d_bit == 0b0) {
+          printf("%s ", inst.operation);
+          print_address(inst);
+          printf(", %s\n", inst.source);
+        } else {
+          printf("%s %s, ", inst.operation, inst.source);
+          print_address(inst);
+          printf("\n");
         }
         break;
       }
@@ -421,9 +421,6 @@ int main(int argc, char* argv[]) {
     }
     else if (get_bits(byte, 1, 7) == 0b0011110) {
       add_sub_cmp_immediate_to_accumulator(instruction, byte, &reader);
-    }
-    else if (get_bits(byte, 2, 7) == 0b100010) {
-      move_register_to_register(instruction, byte, &reader);
     }
     else if (get_bits(byte, 4, 7) == 0b1011) {
       move_immediate_to_register(instruction, byte, &reader);
