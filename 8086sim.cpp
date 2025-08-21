@@ -36,16 +36,6 @@ void print_byte(u8 byte) {
     printf("\n");
 }
 
-void immediate_to_register(char* instruction, u8 opcode_byte, MemoryReader *reader) {
-  u8 w_bit = get_bit(opcode_byte , 3);
-  u8 reg = get_bits(opcode_byte, 0, 2);
-
-  u16 dest = get_immediate(w_bit, 0, reader);
-  const char* source = get_register(reg, w_bit);
-
-  sprintf(instruction + strlen(instruction), " %s, %d", source, dest);
-}
-
 void immediate_to_register_memory(char* instruction, u8 opcode_byte, MemoryReader *reader, bool use_s_bit) {
   u8 byte;
   read(reader, &byte);
@@ -173,16 +163,6 @@ void immediate_to_accumulator(char* instruction, u8 opcode_byte, MemoryReader *r
   } else {
     sprintf(instruction + strlen(instruction), " al, %d", immediate);
   }
-}
-
-void move_register_to_register(char* instruction, u8 opcode_byte, MemoryReader *reader) {
-  sprintf(instruction, "mov");
-  register_to_register(instruction, opcode_byte, reader, true, true);
-}
-
-void move_immediate_to_register(char* instruction, u8 opcode_byte, MemoryReader *reader) {
-  sprintf(instruction, "mov");
-  immediate_to_register(instruction, opcode_byte, reader);
 }
 
 void move_immediate_to_register_memory(char* instruction, u8 opcode_byte, MemoryReader *reader) {
@@ -348,6 +328,12 @@ void print_instruction(CpuInstruction inst) {
         }
         break;
       }
+    case Register_Immediate:
+      {
+
+        printf("%s %s, %d\n", inst.operation, inst.source, inst.immediate);
+        break;
+      }
     default:
       break;
   }
@@ -421,9 +407,6 @@ int main(int argc, char* argv[]) {
     }
     else if (get_bits(byte, 1, 7) == 0b0011110) {
       add_sub_cmp_immediate_to_accumulator(instruction, byte, &reader);
-    }
-    else if (get_bits(byte, 4, 7) == 0b1011) {
-      move_immediate_to_register(instruction, byte, &reader);
     }
     else if (get_bits(byte, 1, 7) == 0b1100011) {
       move_immediate_to_register_memory(instruction, byte, &reader);

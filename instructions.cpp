@@ -11,6 +11,7 @@ struct BitsLocation {
 enum InstructionType {
   Solo,
   Register,
+  Register_Immediate,
   Memory,
   Register_Memory,
   ConditionalJump,
@@ -220,6 +221,13 @@ CpuInstructionDefinition instruction_table[] = {
     .w_bit={ .byte_count=0, .mask=0b00000001 },
     .d_bit={ .byte_count=0, .mask=0b00000010, .shift=1 }
   },
+  {
+    .type=Register_Immediate,
+    .operation="mov",
+    .opcode={ .byte_count=0, .match=0b10110000, .mask=0b11110000 },
+    .reg={ .byte_count=0, .mask=0b00000111 },
+    .w_bit={ .byte_count=0, .mask=0b00001000, .shift=3 },
+  },
 };
 
 struct CpuInstruction {
@@ -329,6 +337,10 @@ CpuInstruction decode_instruction(u8 opcode, MemoryReader *r) {
       if (d->rm.mask != 0) {
         inst.rm = get_bits(bytes, r, d->rm);
         inst.effective_address = effective_address[inst.rm];
+      }
+
+      if (inst.type == Register_Immediate) {
+        inst.immediate = get_immediate(inst.w_bit, 0, r);
       }
       if (inst.type == Memory) {
         if (inst.rm == 0b110 && inst.mod == 0b00) {
