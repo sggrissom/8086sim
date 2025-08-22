@@ -19,6 +19,7 @@ enum InstructionType {
 
 struct CpuInstructionDefinition {
   InstructionType type;
+  BitsLocation op_bits;
   const char* operation;
   u8 min_byte_count;
   bool is_accumulator;
@@ -84,6 +85,50 @@ CpuInstructionDefinition instruction_table[] = {
     .opcode={ .byte_count=0, .match=0b10010000, .mask=0b11111000 },
     .reg={ .byte_count=0, .mask=0b00000111 },
     .w_bit={ .overriden=true, .overriden_value = 1 }
+  },
+  {
+    .type=Register_Memory,
+    .operation="xchg",
+    .min_byte_count=2,
+    .opcode={ .byte_count=0, .match=0b10000110, .mask=0b11111110 },
+    .reg={ .byte_count=1, .mask=0b00111000, .shift=3 },
+    .mod={ .byte_count=1, .mask=0b11000000, .shift=6 },
+    .rm={ .byte_count=1, .mask=0b00000111 },
+    .w_bit={ .byte_count=0, .mask=0b00000001 },
+    .d_bit={ .byte_count=0, .mask=0b00000010, .shift=1 }
+  },
+  {
+    .type=Register_Memory,
+    .operation="lea",
+    .min_byte_count=2,
+    .opcode={ .byte_count=0, .match=0b10001101, .mask=0b11111111 },
+    .reg={ .byte_count=1, .mask=0b00111000, .shift=3 },
+    .mod={ .byte_count=1, .mask=0b11000000, .shift=6 },
+    .rm={ .byte_count=1, .mask=0b00000111 },
+    .w_bit={ .byte_count=0, .mask=0b00000001 },
+    .d_bit={ .overriden=true, .overriden_value = 1 }
+  },
+  {
+    .type=Register_Memory,
+    .operation="lds",
+    .min_byte_count=2,
+    .opcode={ .byte_count=0, .match=0b11000101, .mask=0b11111111 },
+    .reg={ .byte_count=1, .mask=0b00111000, .shift=3 },
+    .mod={ .byte_count=1, .mask=0b11000000, .shift=6 },
+    .rm={ .byte_count=1, .mask=0b00000111 },
+    .w_bit={ .byte_count=0, .mask=0b00000001 },
+    .d_bit={ .overriden=true, .overriden_value = 1 }
+  },
+  {
+    .type=Register_Memory,
+    .operation="les",
+    .min_byte_count=2,
+    .opcode={ .byte_count=0, .match=0b11000100, .mask=0b11111111 },
+    .reg={ .byte_count=1, .mask=0b00111000, .shift=3 },
+    .mod={ .byte_count=1, .mask=0b11000000, .shift=6 },
+    .rm={ .byte_count=1, .mask=0b00000111 },
+    .w_bit={ .overriden=true, .overriden_value = 1 },
+    .d_bit={ .overriden=true, .overriden_value = 1 }
   },
   {
     .type=ConditionalJump,
@@ -228,6 +273,71 @@ CpuInstructionDefinition instruction_table[] = {
     .reg={ .byte_count=0, .mask=0b00000111 },
     .w_bit={ .byte_count=0, .mask=0b00001000, .shift=3 },
   },
+  {
+    .type=Register_Memory,
+    .op_bits={ .byte_count=0, .mask=0b00111000, .shift=3 },
+    .min_byte_count=2,
+    .opcode={ .byte_count=0, .match=0b00000000, .mask=0b11111100 },
+    .reg={ .byte_count=1, .mask=0b00111000, .shift=3 },
+    .mod={ .byte_count=1, .mask=0b11000000, .shift=6 },
+    .rm={ .byte_count=1, .mask=0b00000111 },
+    .w_bit={ .byte_count=0, .mask=0b00000001 },
+    .d_bit={ .byte_count=0, .mask=0b00000010, .shift=1 }
+  },
+  {
+    .type=Register_Memory,
+    .op_bits={ .byte_count=0, .mask=0b00111000, .shift=3 },
+    .min_byte_count=2,
+    .opcode={ .byte_count=0, .match=0b00101000, .mask=0b11111100 },
+    .reg={ .byte_count=1, .mask=0b00111000, .shift=3 },
+    .mod={ .byte_count=1, .mask=0b11000000, .shift=6 },
+    .rm={ .byte_count=1, .mask=0b00000111 },
+    .w_bit={ .byte_count=0, .mask=0b00000001 },
+    .d_bit={ .byte_count=0, .mask=0b00000010, .shift=1 }
+  },
+  {
+    .type=Register_Memory,
+    .op_bits={ .byte_count=0, .mask=0b00111000, .shift=3 },
+    .min_byte_count=2,
+    .opcode={ .byte_count=0, .match=0b00111000, .mask=0b11111100 },
+    .reg={ .byte_count=1, .mask=0b00111000, .shift=3 },
+    .mod={ .byte_count=1, .mask=0b11000000, .shift=6 },
+    .rm={ .byte_count=1, .mask=0b00000111 },
+    .w_bit={ .byte_count=0, .mask=0b00000001 },
+    .d_bit={ .byte_count=0, .mask=0b00000010, .shift=1 }
+  },
+  {
+    .type=Register_Immediate,
+    .operation="in",
+    .opcode={ .byte_count=0, .match=0b11100100, .mask=0b11111110 },
+    .reg={ .overriden=true, .overriden_value = 0 },
+    .w_bit={ .byte_count=0, .mask=0b00000001 },
+  },
+  {
+    .type=Register,
+    .operation="in",
+    .is_accumulator=true,
+    .opcode={ .byte_count=0, .match=0b11101100, .mask=0b11111110 },
+    .reg={ .overriden=true, .overriden_value = 2 },
+    .w_bit={ .byte_count=0, .mask=0b00000001 },
+  },
+  {
+    .type=Register_Immediate,
+    .operation="out",
+    .opcode={ .byte_count=0, .match=0b11100110, .mask=0b11111110 },
+    .reg={ .overriden=true, .overriden_value = 0 },
+    .w_bit={ .byte_count=0, .mask=0b00000001 },
+    .d_bit={ .overriden=true, .overriden_value = 1 }
+  },
+  {
+    .type=Register,
+    .operation="out",
+    .is_accumulator=true,
+    .opcode={ .byte_count=0, .match=0b11101110, .mask=0b11111110 },
+    .reg={ .overriden=true, .overriden_value = 2 },
+    .w_bit={ .byte_count=0, .mask=0b00000001 },
+    .d_bit={ .overriden=true, .overriden_value = 1 }
+  },
 };
 
 struct CpuInstruction {
@@ -301,6 +411,23 @@ u16 get_immediate(u8 w_bit, u8 s_bit, MemoryReader *reader) {
   return dest;
 }
 
+const char* opcode_instruction[3] = {
+  "add", "sub", "cmp",
+};
+
+const char * get_op(u8 op) {
+  if (op == 0b000) {
+    return opcode_instruction[0];
+  }
+  else if (op == 0b101) {
+    return opcode_instruction[1];
+  }
+  else if (op == 0b111) {
+    return opcode_instruction[2];
+  }
+  return "";
+}
+
 CpuInstruction decode_instruction(u8 opcode, MemoryReader *r) {
   u8 bytes[6] = {opcode};
   for (size_t i = 0; i < TABLE_LEN(instruction_table); i++) {
@@ -316,20 +443,25 @@ CpuInstruction decode_instruction(u8 opcode, MemoryReader *r) {
         read(r, &bytes[i]);
       }
 
+      if (d->op_bits.mask != 0) {
+        u8 op = get_bits(bytes, r, d->op_bits);
+        inst.operation = get_op(op);
+      }
       if (d->segment_register.mask != 0) {
         inst.segment_reg = segment_register[get_bits(bytes, r, d->segment_register)];
       }
       if (d->w_bit.mask != 0 || d->w_bit.overriden) {
         inst.w_bit = get_bits(bytes, r, d->w_bit);
       }
-      if (d->d_bit.mask != 0) {
+      if (d->d_bit.mask != 0 || d->d_bit.overriden) {
         inst.d_bit = get_bits(bytes, r, d->d_bit);
       }
       if (d->s_bit.mask != 0) {
         inst.s_bit = get_bits(bytes, r, d->s_bit);
       }
-      if (d->reg.mask != 0) {
-        inst.source = REG(get_bits(bytes, r, d->reg), inst.w_bit);
+      if (d->reg.mask != 0 || d->reg.overriden) {
+        u8 wide_source = d->is_accumulator ? 1 : inst.w_bit;
+        inst.source = REG(get_bits(bytes, r, d->reg), wide_source);
       }
       if (d->mod.mask != 0) {
         inst.mod = get_bits(bytes, r, d->mod);
@@ -340,7 +472,8 @@ CpuInstruction decode_instruction(u8 opcode, MemoryReader *r) {
       }
 
       if (inst.type == Register_Immediate) {
-        inst.immediate = get_immediate(inst.w_bit, 0, r);
+        u8 wide_imm = d->reg.overriden ? 0 : inst.w_bit;
+        inst.immediate = get_immediate(wide_imm, 0, r);
       }
       if (inst.type == Memory) {
         if (inst.rm == 0b110 && inst.mod == 0b00) {
