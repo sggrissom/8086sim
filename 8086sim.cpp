@@ -7,6 +7,13 @@ typedef uint16_t u16;
 typedef int8_t i8;
 typedef int16_t i16;
 
+void print_byte(u8 byte) {
+    for (int i = 7; i >= 0; i--) {
+        printf("%c", (byte >> i) & 1 ? '1' : '0');
+    }
+    printf("\n");
+}
+
 #include "memory.cpp"
 #include "instructions.cpp"
 
@@ -23,13 +30,6 @@ u8 get_bit(u8 byte, u8 num) {
 
 const char* get_register(u8 reg, u8 w_bit) {
   return register_file[reg + 8*w_bit];
-}
-
-void print_byte(u8 byte) {
-    for (int i = 7; i >= 0; i--) {
-        printf("%c", (byte >> i) & 1 ? '1' : '0');
-    }
-    printf("\n");
 }
 
 void immediate_to_register_memory(char* instruction, u8 opcode_byte, MemoryReader *reader, bool use_s_bit) {
@@ -232,10 +232,26 @@ void print_instruction(CpuInstruction inst) {
       }
     case Register_Immediate:
       {
-        if (inst.d_bit) {
-          printf("%s %d, %s\n", inst.operation, inst.immediate, inst.source);
-        } else {
-          printf("%s %s, %d\n", inst.operation, inst.source, inst.immediate);
+        if (inst.rm == 0b110 && inst.mod == 0b00) {
+          const char * width = inst.w_bit ? "word" : "byte";
+          printf("%s [%d], %s %d\n", inst.operation, inst.displacement, width, inst.immediate);
+        }
+        else if (inst.source) {
+          if (inst.d_bit) {
+            printf("%s %d, %s\n", inst.operation, inst.immediate, inst.source);
+          } else {
+            printf("%s %s, %d\n", inst.operation, inst.source, inst.immediate);
+          }
+        }
+        else if (inst.effective_address) {
+          char source[20] = {};
+          if (inst.displacement != 0) {
+            sprintf(source, "[%s + %hd]", inst.effective_address, inst.displacement);
+          } else {
+            sprintf(source, "[%s]", inst.effective_address);
+          }
+          const char * width = inst.w_bit ? "word" : "byte";
+          printf("%s %s, %s %d\n", inst.operation, source, width, inst.immediate);
         }
         break;
       }

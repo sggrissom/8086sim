@@ -308,6 +308,16 @@ CpuInstructionDefinition instruction_table[] = {
   },
   {
     .type=Register_Immediate,
+    .op_bits={ .byte_count=1, .mask=0b00111000, .shift=3 },
+    .min_byte_count=2,
+    .opcode={ .byte_count=0, .match=0b10000000, .mask=0b11111100 },
+    .mod={ .byte_count=1, .mask=0b11000000, .shift=6 },
+    .rm={ .byte_count=1, .mask=0b00000111 },
+    .w_bit={ .byte_count=0, .mask=0b00000001 },
+    .s_bit={ .byte_count=0, .mask=0b00000010, .shift=1 }
+  },
+  {
+    .type=Register_Immediate,
     .operation="in",
     .opcode={ .byte_count=0, .match=0b11100100, .mask=0b11111110 },
     .reg={ .overriden=true, .overriden_value = 0 },
@@ -472,8 +482,22 @@ CpuInstruction decode_instruction(u8 opcode, MemoryReader *r) {
       }
 
       if (inst.type == Register_Immediate) {
+        if (inst.rm == 0b110 && inst.mod == 0b00) {
+          inst.displacement = get_immediate(inst.w_bit, 0, r);
+        }
+
+        if (inst.mod == 0b11) {
+          inst.source = REG(inst.rm, inst.w_bit);
+        }
+
+        if (inst.mod == 0b01) {
+          inst.displacement = get_displacement(0, r);
+        } else if (inst.mod == 0b10) {
+          inst.displacement = get_displacement(1, r);
+        }
+
         u8 wide_imm = d->reg.overriden ? 0 : inst.w_bit;
-        inst.immediate = get_immediate(wide_imm, 0, r);
+        inst.immediate = get_immediate(wide_imm && !inst.s_bit, inst.s_bit, r);
       }
       if (inst.type == Memory) {
         if (inst.rm == 0b110 && inst.mod == 0b00) {
