@@ -1,7 +1,7 @@
 #!/bin/bash
 set -e
 
-CPU_SRC="8086sim.cpp"
+CPU_SRC="./src/8086sim.cpp"
 CPU_BIN="./8086sim"
 ASM_DIR="asm"
 TMP_DIR="tmp"
