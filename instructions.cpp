@@ -13,6 +13,7 @@ enum InstructionType {
   Register,
   Register_Immediate,
   Memory,
+  Memory_Immediate,
   Register_Memory,
   ConditionalJump,
 };
@@ -318,6 +319,15 @@ CpuInstructionDefinition instruction_table[] = {
   },
   {
     .type=Register_Immediate,
+    .operation="mov",
+    .min_byte_count=2,
+    .opcode={ .byte_count=0, .match=0b11000110, .mask=0b11111110 },
+    .mod={ .byte_count=1, .mask=0b11000000, .shift=6 },
+    .rm={ .byte_count=1, .mask=0b00000111 },
+    .w_bit={ .byte_count=0, .mask=0b00000001 }
+  },
+  {
+    .type=Register_Immediate,
     .operation="in",
     .opcode={ .byte_count=0, .match=0b11100100, .mask=0b11111110 },
     .reg={ .overriden=true, .overriden_value = 0 },
@@ -347,6 +357,42 @@ CpuInstructionDefinition instruction_table[] = {
     .reg={ .overriden=true, .overriden_value = 2 },
     .w_bit={ .byte_count=0, .mask=0b00000001 },
     .d_bit={ .overriden=true, .overriden_value = 1 }
+  },
+  {
+    .type=Memory_Immediate,
+    .operation="mov",
+    .is_accumulator=true,
+    .opcode={ .byte_count=0, .match=0b10100000, .mask=0b11111110 },
+    .w_bit={ .byte_count=0, .mask=0b00000001 },
+    .d_bit={ .overriden=true, .overriden_value = 1 }
+  },
+  {
+    .type=Memory_Immediate,
+    .operation="mov",
+    .is_accumulator=true,
+    .opcode={ .byte_count=0, .match=0b10100010, .mask=0b11111110 },
+    .w_bit={ .byte_count=0, .mask=0b00000001 },
+  },
+  {
+    .type=Register_Immediate,
+    .op_bits={ .byte_count=0, .mask=0b00111000, .shift=3 },
+    .is_accumulator = true,
+    .opcode={ .byte_count=0, .match=0b00000100, .mask=0b11111110 },
+    .w_bit={ .byte_count=0, .mask=0b00000001 },
+  },
+  {
+    .type=Register_Immediate,
+    .op_bits={ .byte_count=0, .mask=0b00111000, .shift=3 },
+    .is_accumulator = true,
+    .opcode={ .byte_count=0, .match=0b00101100, .mask=0b11111110 },
+    .w_bit={ .byte_count=0, .mask=0b00000001 },
+  },
+  {
+    .type=Register_Immediate,
+    .op_bits={ .byte_count=0, .mask=0b00111000, .shift=3 },
+    .is_accumulator = true,
+    .opcode={ .byte_count=0, .match=0b00111100, .mask=0b11111110 },
+    .w_bit={ .byte_count=0, .mask=0b00000001 },
   },
 };
 
@@ -543,6 +589,9 @@ CpuInstruction decode_instruction(u8 opcode, MemoryReader *r) {
       }
       if (d->is_accumulator) {
         inst.is_accumulator = true;
+      }
+      if (inst.type == Memory_Immediate) {
+        inst.immediate = get_immediate(inst.w_bit, 0, r);
       }
 
       return inst;

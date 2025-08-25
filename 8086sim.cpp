@@ -17,142 +17,6 @@ void print_byte(u8 byte) {
 #include "memory.cpp"
 #include "instructions.cpp"
 
-u8 get_bits(u8 byte, u8 start, u8 end) {
-  u8 width = end - start + 1;
-  u8 mask = (1 << width) - 1;
-  u8 result = (byte >> start) & mask;
-  return result;
-}
-
-u8 get_bit(u8 byte, u8 num) {
-  return get_bits(byte, num, num);
-}
-
-const char* get_register(u8 reg, u8 w_bit) {
-  return register_file[reg + 8*w_bit];
-}
-
-void immediate_to_register_memory(char* instruction, u8 opcode_byte, MemoryReader *reader, bool use_s_bit) {
-  u8 byte;
-  read(reader, &byte);
-  u8 w_bit = get_bit(opcode_byte , 0);
-  u8 s_bit = use_s_bit ? get_bit(opcode_byte , 1) : 0;
-  u8 mod = get_bits(byte, 6, 7);
-  u8 rm = get_bits(byte, 0, 2);
-  i16 displacement = 0;
-
-  char source[20] = {};
-
-  if (mod == 0b11) {
-    strcpy(source, get_register(rm, w_bit));
-
-    u16 immediate = get_immediate(w_bit && !s_bit, s_bit, reader);
-    sprintf(instruction + strlen(instruction), " %s, %d", source, immediate);
-    return;
-  }
-
-  if (rm == 0b110 && mod == 0b00) {
-    u16 disp = get_immediate(w_bit, 0, reader);
-    u16 immediate = get_immediate(w_bit && !s_bit, s_bit, reader);
-    if (w_bit) {
-      sprintf(instruction + strlen(instruction), " [%d], word %d", disp, immediate);
-    } else {
-      sprintf(instruction + strlen(instruction), " [%d], byte %d", disp, immediate);
-    }
-    return;
-  }
-
-  const char* address = effective_address[rm];
-
-  if (mod == 0b01) {
-    displacement = get_displacement(0, reader);
-  } else if (mod == 0b10) {
-    displacement = get_displacement(1, reader);
-  }
-  if (displacement != 0) {
-    sprintf(source, "[%s + %hd]", address, displacement);
-  } else {
-    sprintf(source, "[%s]", address);
-  }
-
-  u16 immediate = get_immediate(w_bit && !s_bit, s_bit, reader);
-
-  if (w_bit) {
-    sprintf(instruction + strlen(instruction), " %s, word %d", source, immediate);
-  } else {
-    sprintf(instruction + strlen(instruction), " %s, byte %d", source, immediate);
-  }
-}
-
-void memory_to_accumulator(char* instruction, u8 opcode_byte, MemoryReader *reader) {
-  u8 w_bit = get_bit(opcode_byte , 0);
-  u16 immediate = get_immediate(w_bit, 0, reader);
-  sprintf(instruction + strlen(instruction), " ax, [%d]", immediate);
-}
-
-void accumulator_to_memory(char* instruction, u8 opcode_byte, MemoryReader *reader) {
-  u8 w_bit = get_bit(opcode_byte , 0);
-  u16 immediate = get_immediate(w_bit, 0, reader);
-  sprintf(instruction + strlen(instruction), " [%d], ax", immediate);
-}
-
-void immediate_to_accumulator(char* instruction, u8 opcode_byte, MemoryReader *reader) {
-  u8 w_bit = get_bit(opcode_byte , 0);
-  u16 immediate = get_immediate(w_bit, 0, reader);
-  if (w_bit) {
-    sprintf(instruction + strlen(instruction), " ax, %d", immediate);
-  } else {
-    sprintf(instruction + strlen(instruction), " al, %d", immediate);
-  }
-}
-
-void move_immediate_to_register_memory(char* instruction, u8 opcode_byte, MemoryReader *reader) {
-  sprintf(instruction, "mov");
-  immediate_to_register_memory(instruction, opcode_byte, reader, false);
-}
-
-void move_memory_to_accumulator(char* instruction, u8 opcode_byte, MemoryReader *reader) {
-  sprintf(instruction, "mov");
-  memory_to_accumulator(instruction, opcode_byte, reader);
-}
-
-void move_accumulator_to_memory(char* instruction, u8 opcode_byte, MemoryReader *reader) {
-  sprintf(instruction, "mov");
-  accumulator_to_memory(instruction, opcode_byte, reader);
-}
-
-void add_sub_cmp_immediate_to_register(char* instruction, u8 opcode_byte, MemoryReader *reader) {
-  u8 next_byte;
-  peek(reader, &next_byte);
-  u8 op = get_bits(next_byte, 3, 5);
-
-  sprintf(instruction, get_op(op));
-  immediate_to_register_memory(instruction, opcode_byte, reader, true);
-}
-
-void add_sub_cmp_immediate_to_accumulator(char* instruction, u8 opcode_byte, MemoryReader *reader) {
-  u8 op = get_bits(opcode_byte, 3, 5);
-  sprintf(instruction, get_op(op));
-  immediate_to_accumulator(instruction, opcode_byte, reader);
-}
-
-void in_fixed_port(char *instruction, u8 opcode_byte, MemoryReader *reader) {
-  u8 w_bit = get_bit(opcode_byte, 0);
-  u16 data = get_immediate(0, 0, reader);
-  sprintf(instruction, "in %s, %hd", w_bit ? "ax" : "al", data);
-}
-
-void out_fixed_port(char *instruction, u8 opcode_byte, MemoryReader *reader) {
-  u8 w_bit = get_bit(opcode_byte, 0);
-  u16 data = get_immediate(0, 0, reader);
-  sprintf(instruction, "out %hd, %s", data, w_bit ? "ax" : "al");
-}
-
-void out_variable_port(char *instruction, u8 opcode_byte) {
-  u8 w_bit = get_bit(opcode_byte, 0);
-  sprintf(instruction, "out dx, %s", w_bit ? "ax" : "al");
-}
-
 void print_address(CpuInstruction inst) {
     if (inst.displacement > 0) {
       printf("[%s + %hd]", inst.dest, inst.displacement);
@@ -252,6 +116,20 @@ void print_instruction(CpuInstruction inst) {
           }
           const char * width = inst.w_bit ? "word" : "byte";
           printf("%s %s, %s %d\n", inst.operation, source, width, inst.immediate);
+        } else if (inst.is_accumulator) {
+          const char * accumulator = inst.w_bit ? "ax" : "al";
+          printf("%s %s, %d\n", inst.operation, accumulator, inst.immediate);
+        }
+        break;
+      }
+    case Memory_Immediate:
+      {
+        if (inst.is_accumulator) {
+          if (inst.d_bit) {
+            printf("%s ax, [%d]\n", inst.operation, inst.immediate);
+          } else {
+            printf("%s [%d], ax\n", inst.operation, inst.immediate);
+          }
         }
         break;
       }
@@ -278,34 +156,7 @@ int main(int argc, char* argv[]) {
   while (read(&reader, &byte)) {
     memset(instruction, 0, sizeof(instruction));
     CpuInstruction inst = decode_instruction(byte, &reader);
-    if (inst.operation != "nop") {
-      print_instruction(inst);
-      continue;
-    }
-
-    if (get_bits(byte, 2, 7) == 0b100000) {
-      add_sub_cmp_immediate_to_register(instruction, byte, &reader);
-    }
-    else if (get_bits(byte, 1, 7) == 0b0000010) {
-      add_sub_cmp_immediate_to_accumulator(instruction, byte, &reader);
-    }
-    else if (get_bits(byte, 1, 7) == 0b0010110) {
-      add_sub_cmp_immediate_to_accumulator(instruction, byte, &reader);
-    }
-    else if (get_bits(byte, 1, 7) == 0b0011110) {
-      add_sub_cmp_immediate_to_accumulator(instruction, byte, &reader);
-    }
-    else if (get_bits(byte, 1, 7) == 0b1100011) {
-      move_immediate_to_register_memory(instruction, byte, &reader);
-    }
-    else if (get_bits(byte, 1, 7) == 0b1010000) {
-      move_memory_to_accumulator(instruction, byte, &reader);
-    }
-    else if (get_bits(byte, 1, 7) == 0b1010001) {
-      move_accumulator_to_memory(instruction, byte, &reader);
-    }
-
-    printf("%s\n", instruction);
+    print_instruction(inst);
   }
 
   free(reader.memory->data);
