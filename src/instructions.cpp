@@ -120,6 +120,9 @@ CpuInstruction decode_instruction(u8 opcode, MemoryReader *r) {
         inst.immediate = get_immediate(wide_imm && !inst.s_bit, inst.s_bit, r);
       }
       if (inst.type == Memory) {
+        if (inst.mod == 0b11) {
+          inst.source = REG(inst.rm, inst.w_bit);
+        }
         if (inst.rm == 0b110 && inst.mod == 0b00) {
           u8 byte;
           read(r, &byte);

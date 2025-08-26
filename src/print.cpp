@@ -1,11 +1,4 @@
 
-void print_byte(u8 byte) {
-    for (int i = 7; i >= 0; i--) {
-        printf("%c", (byte >> i) & 1 ? '1' : '0');
-    }
-    printf("\n");
-}
-
 void print_address(CpuInstruction inst) {
     if (inst.displacement > 0) {
       printf("[%s + %hd]", inst.dest, inst.displacement);
@@ -49,6 +42,9 @@ void print_instruction(CpuInstruction inst) {
         }
         else if (inst.address_offset != 0) {
           printf("%s %s [%s + %hd]\n", inst.operation, width, inst.effective_address, inst.address_offset);
+        }
+        else if (inst.source) {
+          printf("%s %s\n", inst.operation, inst.source);
         }
         else {
           printf("%s %s [%s]\n", inst.operation, width, inst.effective_address);

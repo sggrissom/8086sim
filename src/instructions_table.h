@@ -240,6 +240,16 @@ CpuInstructionDefinition instruction_table[] = {
     .opcode={ .byte_count=0, .match=0b10011101, .mask=0b11111111 }
   },
   {
+    .type=Solo,
+    .operation="aaa",
+    .opcode={ .byte_count=0, .match=0b00110111, .mask=0b11111111 }
+  },
+  {
+    .type=Solo,
+    .operation="daa",
+    .opcode={ .byte_count=0, .match=0b00100111, .mask=0b11111111 }
+  },
+  {
     .type=Register_Memory,
     .operation="mov",
     .min_byte_count=2,

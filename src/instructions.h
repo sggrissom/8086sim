@@ -78,3 +78,11 @@ const char* effective_address[8] = {
 const char* opcode_instruction[4] = {
   "add", "sub", "cmp", "adc",
 };
+
+
+void print_byte(u8 byte) {
+    for (int i = 7; i >= 0; i--) {
+        printf("%c", (byte >> i) & 1 ? '1' : '0');
+    }
+    printf("\n");
+}
