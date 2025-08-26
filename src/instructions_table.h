@@ -1,5 +1,22 @@
 
 CpuInstructionDefinition instruction_table[] = {
+  {
+    .type=Memory,
+    .operation="inc",
+    .min_byte_count=2,
+    .opcode={ .byte_count=0, .match=0b11111110, .mask=0b11111110 },
+    .pattern={ .byte_count=1, .match=0b00000000, .mask=0b00111000 },
+    .mod={ .byte_count=1, .mask=0b11000000, .shift=6 } ,
+    .rm={ .byte_count=1, .mask=0b00000111 },
+    .w_bit={ .mask=0b00000001 }
+  },
+  {
+    .type=Register,
+    .operation="inc",
+    .opcode={ .byte_count=0, .match=0b01000000, .mask=0b11111000 },
+    .reg={ .byte_count=0, .mask=0b00000111 },
+    .w_bit={ .overriden=true, .overriden_value = 1 }
+  },
   { 
     .type=Register,
     .operation="push",
@@ -18,8 +35,10 @@ CpuInstructionDefinition instruction_table[] = {
     .operation="push",
     .min_byte_count=2,
     .opcode={ .byte_count=0, .match=0b11111111, .mask=0b11111111 },
+    .pattern={ .byte_count=1, .match=0b00110000, .mask=0b00111000 },
     .mod={ .byte_count=1, .mask=0b11000000, .shift=6 } ,
     .rm={ .byte_count=1, .mask=0b00000111 },
+    .w_bit={ .overriden=true, .overriden_value = 1 }
   },
   {
     .type=Memory,
@@ -27,7 +46,8 @@ CpuInstructionDefinition instruction_table[] = {
     .min_byte_count=2,
     .opcode={ .byte_count=0, .match=0b10001111, .mask=0b11111111 },
     .mod={ .byte_count=1, .mask=0b11000000, .shift=6 } ,
-    .rm={ .byte_count=1, .mask=0b00000111 }
+    .rm={ .byte_count=1, .mask=0b00000111 },
+    .w_bit={ .overriden=true, .overriden_value = 1 }
   },
   {
     .type=Register,

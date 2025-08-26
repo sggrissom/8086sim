@@ -29,6 +29,7 @@ struct CpuInstructionDefinition {
   u8 min_byte_count;
   bool is_accumulator;
   BitsLocation opcode;
+  BitsLocation pattern;
   BitsLocation segment_register;
   BitsLocation reg;
   BitsLocation mod;

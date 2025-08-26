@@ -43,14 +43,15 @@ void print_instruction(CpuInstruction inst) {
       }
     case Memory:
       {
+        const char * width = inst.w_bit ? "word" : "byte";
         if (inst.displacement) {
-          printf("%s %s [%d]\n", inst.operation, "word", inst.displacement);
+          printf("%s %s [%d]\n", inst.operation, width, inst.displacement);
         }
         else if (inst.address_offset != 0) {
-          printf("%s word [%s + %hd]\n", inst.operation, inst.effective_address, inst.address_offset);
+          printf("%s %s [%s + %hd]\n", inst.operation, width, inst.effective_address, inst.address_offset);
         }
         else {
-          printf("%s word [%s]\n", inst.operation, inst.effective_address);
+          printf("%s %s [%s]\n", inst.operation, width, inst.effective_address);
         }
         break;
       }

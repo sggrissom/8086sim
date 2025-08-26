@@ -56,7 +56,14 @@ CpuInstruction decode_instruction(u8 opcode, MemoryReader *r) {
   for (size_t i = 0; i < TABLE_LEN(instruction_table); i++) {
     const CpuInstructionDefinition *d = &instruction_table[i];
 
-    if ((opcode & d->opcode.mask) == d->opcode.match) {
+    bool opcode_matches = (opcode & d->opcode.mask) == d->opcode.match;
+    if (opcode_matches && d->pattern.mask != 0) {
+      if (d->pattern.byte_count > 0) {
+        peek(r, &bytes[d->pattern.byte_count]);
+      }
+      opcode_matches = (bytes[d->pattern.byte_count] & d->pattern.mask) == d->pattern.match;
+    }
+    if (opcode_matches) {
       CpuInstruction inst = {
         .instruction_address = r->ip,
         .type = d->type,
