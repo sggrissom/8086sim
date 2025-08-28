@@ -17,6 +17,53 @@ CpuInstructionDefinition instruction_table[] = {
     .reg={ .byte_count=0, .mask=0b00000111 },
     .w_bit={ .overriden=true, .overriden_value = 1 }
   },
+  {
+    .type=Memory,
+    .operation="dec",
+    .min_byte_count=2,
+    .opcode={ .byte_count=0, .match=0b11111110, .mask=0b11111110 },
+    .pattern={ .byte_count=1, .match=0b00001000, .mask=0b00111000 },
+    .mod={ .byte_count=1, .mask=0b11000000, .shift=6 } ,
+    .rm={ .byte_count=1, .mask=0b00000111 },
+    .w_bit={ .mask=0b00000001 }
+  },
+  {
+    .type=Register,
+    .operation="dec",
+    .opcode={ .byte_count=0, .match=0b01001000, .mask=0b11111000 },
+    .reg={ .byte_count=0, .mask=0b00000111 },
+    .w_bit={ .overriden=true, .overriden_value = 1 }
+  },
+  {
+    .type=Memory,
+    .operation="neg",
+    .min_byte_count=2,
+    .opcode={ .byte_count=0, .match=0b11110110, .mask=0b11111110 },
+    .pattern={ .byte_count=1, .match=0b00011000, .mask=0b00111000 },
+    .mod={ .byte_count=1, .mask=0b11000000, .shift=6 } ,
+    .rm={ .byte_count=1, .mask=0b00000111 },
+    .w_bit={ .mask=0b00000001 }
+  },
+  {
+    .type=Memory,
+    .operation="mul",
+    .min_byte_count=2,
+    .opcode={ .byte_count=0, .match=0b11110110, .mask=0b11111110 },
+    .pattern={ .byte_count=1, .match=0b00100000, .mask=0b00111000 },
+    .mod={ .byte_count=1, .mask=0b11000000, .shift=6 } ,
+    .rm={ .byte_count=1, .mask=0b00000111 },
+    .w_bit={ .mask=0b00000001 }
+  },
+  {
+    .type=Memory,
+    .operation="imul",
+    .min_byte_count=2,
+    .opcode={ .byte_count=0, .match=0b11110110, .mask=0b11111110 },
+    .pattern={ .byte_count=1, .match=0b00101000, .mask=0b00111000 },
+    .mod={ .byte_count=1, .mask=0b11000000, .shift=6 } ,
+    .rm={ .byte_count=1, .mask=0b00000111 },
+    .w_bit={ .mask=0b00000001 }
+  },
   { 
     .type=Register,
     .operation="push",
@@ -250,6 +297,16 @@ CpuInstructionDefinition instruction_table[] = {
     .opcode={ .byte_count=0, .match=0b00100111, .mask=0b11111111 }
   },
   {
+    .type=Solo,
+    .operation="aas",
+    .opcode={ .byte_count=0, .match=0b00111111, .mask=0b11111111 }
+  },
+  {
+    .type=Solo,
+    .operation="das",
+    .opcode={ .byte_count=0, .match=0b00101111, .mask=0b11111111 }
+  },
+  {
     .type=Register_Memory,
     .operation="mov",
     .min_byte_count=2,
@@ -414,5 +471,12 @@ CpuInstructionDefinition instruction_table[] = {
     .rm={ .byte_count=1, .mask=0b00000111 },
     .w_bit={ .byte_count=0, .mask=0b00000001 },
     .s_bit={ .byte_count=0, .mask=0b00000010, .shift=1 }
+  },
+  {
+    .type=Solo,
+    .operation="aam",
+    .min_byte_count=2,
+    .opcode={ .byte_count=0, .match=0b11010100 , .mask=0b11111111 },
+    .pattern={ .byte_count=1, .match=0b00001010, .mask=0b11111111},
   },
 };

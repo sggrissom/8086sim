@@ -174,33 +174,33 @@ sbb al, 9
 sbb cx, bx
 sbb ch, al
 
-;dec ax
-;dec cx
-;dec dh
-;dec al
-;dec ah
-;dec sp
-;dec di
-;dec byte [bp + 1002]
-;dec word [bx + 39]
-;dec byte [bx + si + 5]
-;dec word [bp + di - 10044]
-;dec word [9349]
-;dec byte [bp]
-;
-;neg ax
-;neg cx
-;neg dh
-;neg al
-;neg ah
-;neg sp
-;neg di
-;neg byte [bp + 1002]
-;neg word [bx + 39]
-;neg byte [bx + si + 5]
-;neg word [bp + di - 10044]
-;neg word [9349]
-;neg byte [bp]
+dec ax
+dec cx
+dec dh
+dec al
+dec ah
+dec sp
+dec di
+dec byte [bp + 1002]
+dec word [bx + 39]
+dec byte [bx + si + 5]
+dec word [bp + di - 10044]
+dec word [9349]
+dec byte [bp]
+
+neg ax
+neg cx
+neg dh
+neg al
+neg ah
+neg sp
+neg di
+neg byte [bp + 1002]
+neg word [bx + 39]
+neg byte [bx + si + 5]
+neg word [bp + di - 10044]
+neg word [9349]
+neg byte [bp]
 
 cmp bx, cx
 cmp dh, [bp + 390]
@@ -209,20 +209,20 @@ cmp bl, 20
 cmp byte [bx], 34
 cmp ax, 23909
 
-;aas
-;das
+aas
+das
 
-;mul al
-;mul cx
-;mul word [bp]
-;mul byte [bx + di + 500]
+mul al
+mul cx
+mul word [bp]
+mul byte [bx + di + 500]
 
-;imul ch
-;imul dx
-;imul byte [bx]
-;imul word [9483]
+imul ch
+imul dx
+imul byte [bx]
+imul word [9483]
 
-;aam
+aam
 
 ;div bl
 ;div sp
