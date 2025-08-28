@@ -1,6 +1,30 @@
 
 CpuInstructionDefinition instruction_table[] = {
   {
+    .type=Solo,
+    .operation="aam",
+    .min_byte_count=2,
+    .opcode={ .byte_count=0, .match=0b11010100 , .mask=0b11111111 },
+    .pattern={ .byte_count=1, .match=0b00001010, .mask=0b11111111},
+  },
+  {
+    .type=Solo,
+    .operation="aad",
+    .min_byte_count=2,
+    .opcode={ .byte_count=0, .match=0b11010101 , .mask=0b11111111 },
+    .pattern={ .byte_count=1, .match=0b00001010, .mask=0b11111111},
+  },
+  {
+    .type=Solo,
+    .operation="cbw",
+    .opcode={ .byte_count=0, .match=0b10011000 , .mask=0b11111111 },
+  },
+  {
+    .type=Solo,
+    .operation="cwd",
+    .opcode={ .byte_count=0, .match=0b10011001 , .mask=0b11111111 },
+  },
+  {
     .type=Memory,
     .operation="inc",
     .min_byte_count=2,
@@ -60,6 +84,26 @@ CpuInstructionDefinition instruction_table[] = {
     .min_byte_count=2,
     .opcode={ .byte_count=0, .match=0b11110110, .mask=0b11111110 },
     .pattern={ .byte_count=1, .match=0b00101000, .mask=0b00111000 },
+    .mod={ .byte_count=1, .mask=0b11000000, .shift=6 } ,
+    .rm={ .byte_count=1, .mask=0b00000111 },
+    .w_bit={ .mask=0b00000001 }
+  },
+  {
+    .type=Memory,
+    .operation="div",
+    .min_byte_count=2,
+    .opcode={ .byte_count=0, .match=0b11110110, .mask=0b11111110 },
+    .pattern={ .byte_count=1, .match=0b00110000, .mask=0b00111000 },
+    .mod={ .byte_count=1, .mask=0b11000000, .shift=6 } ,
+    .rm={ .byte_count=1, .mask=0b00000111 },
+    .w_bit={ .mask=0b00000001 }
+  },
+  {
+    .type=Memory,
+    .operation="idiv",
+    .min_byte_count=2,
+    .opcode={ .byte_count=0, .match=0b11110110, .mask=0b11111110 },
+    .pattern={ .byte_count=1, .match=0b00111000, .mask=0b00111000 },
     .mod={ .byte_count=1, .mask=0b11000000, .shift=6 } ,
     .rm={ .byte_count=1, .mask=0b00000111 },
     .w_bit={ .mask=0b00000001 }
@@ -471,12 +515,5 @@ CpuInstructionDefinition instruction_table[] = {
     .rm={ .byte_count=1, .mask=0b00000111 },
     .w_bit={ .byte_count=0, .mask=0b00000001 },
     .s_bit={ .byte_count=0, .mask=0b00000010, .shift=1 }
-  },
-  {
-    .type=Solo,
-    .operation="aam",
-    .min_byte_count=2,
-    .opcode={ .byte_count=0, .match=0b11010100 , .mask=0b11111111 },
-    .pattern={ .byte_count=1, .match=0b00001010, .mask=0b11111111},
   },
 };
