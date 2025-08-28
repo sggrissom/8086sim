@@ -48,6 +48,9 @@ const char * get_op(u8 op) {
   else if (op == 0b010) {
     return opcode_instruction[3];
   }
+  else if (op == 0b011) {
+    return opcode_instruction[4];
+  }
   return "";
 }
 
@@ -62,6 +65,16 @@ CpuInstruction decode_instruction(u8 opcode, MemoryReader *r) {
         peek(r, &bytes[d->pattern.byte_count]);
       }
       opcode_matches = (bytes[d->pattern.byte_count] & d->pattern.mask) == d->pattern.match;
+    }
+    if (d->op_bits.mask != 0) {
+      if (d->op_bits.byte_count > 0) {
+        peek(r, &bytes[d->op_bits.byte_count]);
+      }
+      u8 op = get_bits(bytes, r, d->op_bits);
+      const char *operation = get_op(op);
+      if (operation == "") {
+        opcode_matches = false;
+      }
     }
     if (opcode_matches) {
       CpuInstruction inst = {

@@ -162,18 +162,18 @@ sub al, 9
 sub cx, bx
 sub ch, al
 
-;sbb cx, [bp]
-;sbb dx, [bx + si]
-;sbb [bp + di + 5000], ah
-;sbb [bx], al
-;sbb sp, 392
-;sbb si, 5
-;sbb ax, 1000
-;sbb ah, 30
-;sbb al, 9
-;sbb cx, bx
-;sbb ch, al
-;
+sbb cx, [bp]
+sbb dx, [bx + si]
+sbb [bp + di + 5000], ah
+sbb [bx], al
+sbb sp, 392
+sbb si, 5
+sbb ax, 1000
+sbb ah, 30
+sbb al, 9
+sbb cx, bx
+sbb ch, al
+
 ;dec ax
 ;dec cx
 ;dec dh

@@ -269,17 +269,6 @@ CpuInstructionDefinition instruction_table[] = {
   },
   {
     .type=Register_Memory,
-    .op_bits={ .byte_count=0, .mask=0b00111000, .shift=3 },
-    .min_byte_count=2,
-    .opcode={ .byte_count=0, .match=0b00000000, .mask=0b11111100 },
-    .reg={ .byte_count=1, .mask=0b00111000, .shift=3 },
-    .mod={ .byte_count=1, .mask=0b11000000, .shift=6 },
-    .rm={ .byte_count=1, .mask=0b00000111 },
-    .w_bit={ .byte_count=0, .mask=0b00000001 },
-    .d_bit={ .byte_count=0, .mask=0b00000010, .shift=1 }
-  },
-  {
-    .type=Register_Memory,
     .operation="adc",
     .min_byte_count=2,
     .opcode={ .byte_count=0, .match=0b00010000, .mask=0b11111100 },
@@ -288,48 +277,6 @@ CpuInstructionDefinition instruction_table[] = {
     .rm={ .byte_count=1, .mask=0b00000111 },
     .w_bit={ .byte_count=0, .mask=0b00000001 },
     .d_bit={ .byte_count=0, .mask=0b00000010, .shift=1 }
-  },
-  {
-    .type=Register_Memory,
-    .op_bits={ .byte_count=0, .mask=0b00111000, .shift=3 },
-    .min_byte_count=2,
-    .opcode={ .byte_count=0, .match=0b00101000, .mask=0b11111100 },
-    .reg={ .byte_count=1, .mask=0b00111000, .shift=3 },
-    .mod={ .byte_count=1, .mask=0b11000000, .shift=6 },
-    .rm={ .byte_count=1, .mask=0b00000111 },
-    .w_bit={ .byte_count=0, .mask=0b00000001 },
-    .d_bit={ .byte_count=0, .mask=0b00000010, .shift=1 }
-  },
-  {
-    .type=Register_Memory,
-    .op_bits={ .byte_count=0, .mask=0b00111000, .shift=3 },
-    .min_byte_count=2,
-    .opcode={ .byte_count=0, .match=0b00111000, .mask=0b11111100 },
-    .reg={ .byte_count=1, .mask=0b00111000, .shift=3 },
-    .mod={ .byte_count=1, .mask=0b11000000, .shift=6 },
-    .rm={ .byte_count=1, .mask=0b00000111 },
-    .w_bit={ .byte_count=0, .mask=0b00000001 },
-    .d_bit={ .byte_count=0, .mask=0b00000010, .shift=1 }
-  },
-  {
-    .type=Register_Immediate,
-    .op_bits={ .byte_count=1, .mask=0b00111000, .shift=3 },
-    .min_byte_count=2,
-    .opcode={ .byte_count=0, .match=0b10000000, .mask=0b11111100 },
-    .mod={ .byte_count=1, .mask=0b11000000, .shift=6 },
-    .rm={ .byte_count=1, .mask=0b00000111 },
-    .w_bit={ .byte_count=0, .mask=0b00000001 },
-    .s_bit={ .byte_count=0, .mask=0b00000010, .shift=1 }
-  },
-  {
-    .type=Register_Immediate,
-    .op_bits={ .byte_count=1, .mask=0b00111000, .shift=3 },
-    .min_byte_count=2,
-    .opcode={ .byte_count=0, .match=0b10000000, .mask=0b11111100 },
-    .mod={ .byte_count=1, .mask=0b11000000, .shift=6 },
-    .rm={ .byte_count=1, .mask=0b00000111 },
-    .w_bit={ .byte_count=0, .mask=0b00000001 },
-    .s_bit={ .byte_count=0, .mask=0b00000010, .shift=1 }
   },
   {
     .type=Register_Immediate,
@@ -389,13 +336,6 @@ CpuInstructionDefinition instruction_table[] = {
   },
   {
     .type=Register_Immediate,
-    .op_bits={ .byte_count=0, .mask=0b00111000, .shift=3 },
-    .is_accumulator = true,
-    .opcode={ .byte_count=0, .match=0b00000100, .mask=0b11111110 },
-    .w_bit={ .byte_count=0, .mask=0b00000001 },
-  },
-  {
-    .type=Register_Immediate,
     .operation="adc",
     .is_accumulator = true,
     .opcode={ .byte_count=0, .match=0b00010100, .mask=0b11111110 },
@@ -405,7 +345,14 @@ CpuInstructionDefinition instruction_table[] = {
     .type=Register_Immediate,
     .op_bits={ .byte_count=0, .mask=0b00111000, .shift=3 },
     .is_accumulator = true,
-    .opcode={ .byte_count=0, .match=0b00101100, .mask=0b11111110 },
+    .opcode={ .byte_count=0, .match=0b00000100, .mask=0b11111110 },
+    .w_bit={ .byte_count=0, .mask=0b00000001 },
+  },
+  {
+    .type=Register_Immediate,
+    .op_bits={ .byte_count=0, .mask=0b00111000, .shift=3 },
+    .is_accumulator = true,
+    .opcode={ .byte_count=0, .match=0b00000100, .mask=0b11000110 },
     .w_bit={ .byte_count=0, .mask=0b00000001 },
   },
   {
@@ -414,5 +361,58 @@ CpuInstructionDefinition instruction_table[] = {
     .is_accumulator = true,
     .opcode={ .byte_count=0, .match=0b00111100, .mask=0b11111110 },
     .w_bit={ .byte_count=0, .mask=0b00000001 },
+  },
+  {
+    .type=Register_Memory,
+    .op_bits={ .byte_count=0, .mask=0b00111000, .shift=3 },
+    .min_byte_count=2,
+    .opcode={ .byte_count=0, .match=0b00000000, .mask=0b11000100 },
+    .reg={ .byte_count=1, .mask=0b00111000, .shift=3 },
+    .mod={ .byte_count=1, .mask=0b11000000, .shift=6 },
+    .rm={ .byte_count=1, .mask=0b00000111 },
+    .w_bit={ .byte_count=0, .mask=0b00000001 },
+    .d_bit={ .byte_count=0, .mask=0b00000010, .shift=1 }
+  },
+  {
+    .type=Register_Memory,
+    .op_bits={ .byte_count=0, .mask=0b00111000, .shift=3 },
+    .min_byte_count=2,
+    .opcode={ .byte_count=0, .match=0b00000000, .mask=0b11000100 },
+    .reg={ .byte_count=1, .mask=0b00111000, .shift=3 },
+    .mod={ .byte_count=1, .mask=0b11000000, .shift=6 },
+    .rm={ .byte_count=1, .mask=0b00000111 },
+    .w_bit={ .byte_count=0, .mask=0b00000001 },
+    .d_bit={ .byte_count=0, .mask=0b00000010, .shift=1 }
+  },
+  {
+    .type=Register_Memory,
+    .op_bits={ .byte_count=0, .mask=0b00111000, .shift=3 },
+    .min_byte_count=2,
+    .opcode={ .byte_count=0, .match=0b00000000, .mask=0b11000100 },
+    .reg={ .byte_count=1, .mask=0b00111000, .shift=3 },
+    .mod={ .byte_count=1, .mask=0b11000000, .shift=6 },
+    .rm={ .byte_count=1, .mask=0b00000111 },
+    .w_bit={ .byte_count=0, .mask=0b00000001 },
+    .d_bit={ .byte_count=0, .mask=0b00000010, .shift=1 }
+  },
+  {
+    .type=Register_Immediate,
+    .op_bits={ .byte_count=1, .mask=0b00111000, .shift=3 },
+    .min_byte_count=2,
+    .opcode={ .byte_count=0, .match=0b10000000, .mask=0b11000100 },
+    .mod={ .byte_count=1, .mask=0b11000000, .shift=6 },
+    .rm={ .byte_count=1, .mask=0b00000111 },
+    .w_bit={ .byte_count=0, .mask=0b00000001 },
+    .s_bit={ .byte_count=0, .mask=0b00000010, .shift=1 }
+  },
+  {
+    .type=Register_Immediate,
+    .op_bits={ .byte_count=1, .mask=0b00111000, .shift=3 },
+    .min_byte_count=2,
+    .opcode={ .byte_count=0, .match=0b10000000, .mask=0b11000100 },
+    .mod={ .byte_count=1, .mask=0b11000000, .shift=6 },
+    .rm={ .byte_count=1, .mask=0b00000111 },
+    .w_bit={ .byte_count=0, .mask=0b00000001 },
+    .s_bit={ .byte_count=0, .mask=0b00000010, .shift=1 }
   },
 };
