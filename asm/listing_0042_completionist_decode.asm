@@ -238,13 +238,12 @@ aad
 cbw
 cwd
 
-    
-;not ah
-;not bl
-;not sp
-;not si
-;not word [bp]
-;not byte [bp + 9905]
+not ah
+not bl
+not sp
+not si
+not word [bp]
+not byte [bp + 9905]
 
 ;shl ah, 1
 ;shr ax, 1

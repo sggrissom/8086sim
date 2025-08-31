@@ -90,6 +90,36 @@ CpuInstructionDefinition instruction_table[] = {
   },
   {
     .type=Memory,
+    .operation="not",
+    .min_byte_count=2,
+    .opcode={ .byte_count=0, .match=0b11110110, .mask=0b11111110 },
+    .pattern={ .byte_count=1, .match=0b00010000, .mask=0b00111000 },
+    .mod={ .byte_count=1, .mask=0b11000000, .shift=6 } ,
+    .rm={ .byte_count=1, .mask=0b00000111 },
+    .w_bit={ .mask=0b00000001 }
+  },
+  {
+    .type=Memory,
+    .operation="shl",
+    .min_byte_count=2,
+    .opcode={ .byte_count=0, .match=0b11010000, .mask=0b11111100 },
+    .pattern={ .byte_count=1, .match=0b00100000, .mask=0b00111000 },
+    .mod={ .byte_count=1, .mask=0b11000000, .shift=6 } ,
+    .rm={ .byte_count=1, .mask=0b00000111 },
+    .w_bit={ .mask=0b00000001 }
+  },
+  {
+    .type=Memory,
+    .operation="shr",
+    .min_byte_count=2,
+    .opcode={ .byte_count=0, .match=0b11010000, .mask=0b11111100 },
+    .pattern={ .byte_count=1, .match=0b00101000, .mask=0b00111000 },
+    .mod={ .byte_count=1, .mask=0b11000000, .shift=6 } ,
+    .rm={ .byte_count=1, .mask=0b00000111 },
+    .w_bit={ .mask=0b00000001 }
+  },
+  {
+    .type=Memory,
     .operation="div",
     .min_byte_count=2,
     .opcode={ .byte_count=0, .match=0b11110110, .mask=0b11111110 },
