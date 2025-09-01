@@ -37,6 +37,8 @@ struct CpuInstructionDefinition {
   BitsLocation w_bit;
   BitsLocation d_bit;
   BitsLocation s_bit;
+  BitsLocation v_bit;
+  BitsLocation z_bit;
 };
 
 struct CpuInstruction {
@@ -52,6 +54,9 @@ struct CpuInstruction {
   u8 w_bit;
   u8 s_bit;
   u8 d_bit;
+  u8 v_bit;
+  u8 z_bit;
+  u8 use_v_bit;
   u8 is_accumulator;
   u16 displacement;
   u16 immediate;

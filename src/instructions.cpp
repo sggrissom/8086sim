@@ -102,6 +102,13 @@ CpuInstruction decode_instruction(u8 opcode, MemoryReader *r) {
       if (d->s_bit.mask != 0) {
         inst.s_bit = get_bits(bytes, r, d->s_bit);
       }
+      if (d->v_bit.mask != 0) {
+        inst.use_v_bit = true;
+        inst.v_bit = get_bits(bytes, r, d->v_bit);
+      }
+      if (d->z_bit.mask != 0) {
+        inst.z_bit = get_bits(bytes, r, d->z_bit);
+      }
       if (d->reg.mask != 0 || d->reg.overriden) {
         u8 wide_source = d->is_accumulator ? 1 : inst.w_bit;
         inst.source = REG(get_bits(bytes, r, d->reg), wide_source);

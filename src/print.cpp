@@ -43,6 +43,11 @@ void print_instruction(CpuInstruction inst) {
         else if (inst.address_offset != 0) {
           printf("%s %s [%s + %hd]\n", inst.operation, width, inst.effective_address, inst.address_offset);
         }
+        else if (inst.source && inst.use_v_bit) {
+          if (inst.v_bit == 0) {
+            printf("%s %s, 1\n", inst.operation, inst.source);
+          }
+        }
         else if (inst.source) {
           printf("%s %s\n", inst.operation, inst.source);
         }
