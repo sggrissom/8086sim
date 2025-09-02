@@ -195,6 +195,16 @@ CpuInstructionDefinition instruction_table[] = {
     .rm={ .byte_count=1, .mask=0b00000111 },
     .w_bit={ .mask=0b00000001 }
   },
+  {
+    .type=Register_Immediate,
+    .operation="test",
+    .min_byte_count=2,
+    .opcode={ .byte_count=0, .match=0b11110110, .mask=0b11111110 },
+    .pattern={ .byte_count=1, .match=0b00000000, .mask=0b00111000 },
+    .mod={ .byte_count=1, .mask=0b11000000, .shift=6 } ,
+    .rm={ .byte_count=1, .mask=0b00000111 },
+    .w_bit={ .mask=0b00000001 }
+  },
   { 
     .type=Register,
     .operation="push",
@@ -460,11 +470,22 @@ CpuInstructionDefinition instruction_table[] = {
     .operation="adc",
     .min_byte_count=2,
     .opcode={ .byte_count=0, .match=0b00010000, .mask=0b11111100 },
+    .pattern={ .byte_count=1, .match=0b00010000, .mask=0b00111000 },
     .reg={ .byte_count=1, .mask=0b00111000, .shift=3 },
     .mod={ .byte_count=1, .mask=0b11000000, .shift=6 },
     .rm={ .byte_count=1, .mask=0b00000111 },
     .w_bit={ .byte_count=0, .mask=0b00000001 },
     .d_bit={ .byte_count=0, .mask=0b00000010, .shift=1 }
+  },
+  {
+    .type=Register_Memory,
+    .operation="test",
+    .min_byte_count=2,
+    .opcode={ .byte_count=0, .match=0b10000100, .mask=0b11111110 },
+    .reg={ .byte_count=1, .mask=0b00111000, .shift=3 },
+    .mod={ .byte_count=1, .mask=0b11000000, .shift=6 },
+    .rm={ .byte_count=1, .mask=0b00000111 },
+    .w_bit={ .byte_count=0, .mask=0b00000001 },
   },
   {
     .type=Register_Immediate,
@@ -527,6 +548,13 @@ CpuInstructionDefinition instruction_table[] = {
     .operation="adc",
     .is_accumulator = true,
     .opcode={ .byte_count=0, .match=0b00010100, .mask=0b11111110 },
+    .w_bit={ .byte_count=0, .mask=0b00000001 },
+  },
+  {
+    .type=Register_Immediate,
+    .operation="test",
+    .is_accumulator = true,
+    .opcode={ .byte_count=0, .match=0b10101000, .mask=0b11111110 },
     .w_bit={ .byte_count=0, .mask=0b00000001 },
   },
   {

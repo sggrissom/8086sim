@@ -9,6 +9,18 @@ void print_address(CpuInstruction inst) {
     }
 }
 
+void print_v_bit_clause(CpuInstruction inst) {
+  if (inst.use_v_bit == 0) {
+    printf("\n");
+    return;
+  }
+  if (inst.v_bit == 0) {
+    printf(", 1\n");
+  } else {
+    printf(", cl\n");
+  }
+}
+
 void print_instruction(CpuInstruction inst) {
   switch (inst.type) {
     case Solo:
@@ -38,22 +50,18 @@ void print_instruction(CpuInstruction inst) {
       {
         const char * width = inst.w_bit ? "word" : "byte";
         if (inst.displacement) {
-          printf("%s %s [%d]\n", inst.operation, width, inst.displacement);
+          printf("%s %s [%d]", inst.operation, width, inst.displacement);
         }
         else if (inst.address_offset != 0) {
-          printf("%s %s [%s + %hd]\n", inst.operation, width, inst.effective_address, inst.address_offset);
-        }
-        else if (inst.source && inst.use_v_bit) {
-          if (inst.v_bit == 0) {
-            printf("%s %s, 1\n", inst.operation, inst.source);
-          }
+          printf("%s %s [%s + %hd]", inst.operation, width, inst.effective_address, inst.address_offset);
         }
         else if (inst.source) {
-          printf("%s %s\n", inst.operation, inst.source);
+          printf("%s %s", inst.operation, inst.source);
         }
         else {
-          printf("%s %s [%s]\n", inst.operation, width, inst.effective_address);
+          printf("%s %s [%s]", inst.operation, width, inst.effective_address);
         }
+        print_v_bit_clause(inst);
         break;
       }
     case ConditionalJump:

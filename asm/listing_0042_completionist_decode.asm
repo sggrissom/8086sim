@@ -253,49 +253,49 @@ ror dh, 1
 rcl sp, 1
 rcr bp, 1
 
-;shl word [bp + 5], 1
-;shr byte [bx + si - 199], 1
-;sar byte [bx + di - 300], 1
-;rol word [bp], 1
-;ror word [4938], 1
-;rcl byte [3], 1
-;rcr word [bx], 1
+shl word [bp + 5], 1
+shr byte [bx + si - 199], 1
+sar byte [bx + di - 300], 1
+rol word [bp], 1
+ror word [4938], 1
+rcl byte [3], 1
+rcr word [bx], 1
 
-;shl ah, cl
-;shr ax, cl
-;sar bx, cl
-;rol cx, cl
-;ror dh, cl
-;rcl sp, cl
-;rcr bp, cl
+shl ah, cl
+shr ax, cl
+sar bx, cl
+rol cx, cl
+ror dh, cl
+rcl sp, cl
+rcr bp, cl
 
-;shl word [bp + 5], cl
-;shr word [bx + si - 199], cl
-;sar byte [bx + di - 300], cl
-;rol byte [bp], cl
-;ror byte [4938], cl
-;rcl byte [3], cl
-;rcr word [bx], cl
+shl word [bp + 5], cl
+shr word [bx + si - 199], cl
+sar byte [bx + di - 300], cl
+rol byte [bp], cl
+ror byte [4938], cl
+rcl byte [3], cl
+rcr word [bx], cl
 
-;and al, ah
-;and ch, cl
-;and bp, si
-;and di, sp
-;and al, 93
-;and ax, 20392
-;and [bp + si + 10], ch
-;and [bx + di + 1000], dx
-;and bx, [bp]
-;and cx, [4384]
-;and byte [bp - 39], 239
-;and word [bx + si - 4332], 10328
+and al, ah
+and ch, cl
+and bp, si
+and di, sp
+and al, 93
+and ax, 20392
+and [bp + si + 10], ch
+and [bx + di + 1000], dx
+and bx, [bp]
+and cx, [4384]
+and byte [bp - 39], 239
+and word [bx + si - 4332], 10328
 
-;test bx, cx
-;test dh, [bp + 390]
-;test [bp + 2], si
-;test bl, 20
-;test byte [bx], 34
-;test ax, 23909
+test bx, cx
+test dh, [bp + 390]
+test [bp + 2], si
+test bl, 20
+test byte [bx], 34
+test ax, 23909
 
 ;or al, ah
 ;or ch, cl

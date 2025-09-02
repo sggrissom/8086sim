@@ -51,6 +51,9 @@ const char * get_op(u8 op) {
   else if (op == 0b011) {
     return opcode_instruction[4];
   }
+  else if (op == 0b100) {
+    return opcode_instruction[5];
+  }
   return "";
 }
 

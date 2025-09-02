@@ -80,8 +80,8 @@ const char* effective_address[8] = {
   "si", "di", "bp", "bx",
 };
 
-const char* opcode_instruction[5] = {
-  "add", "sub", "cmp", "adc", "sbb",
+const char* opcode_instruction[6] = {
+  "add", "sub", "cmp", "adc", "sbb", "and",
 };
 
 
