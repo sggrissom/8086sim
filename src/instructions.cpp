@@ -35,29 +35,8 @@ u16 get_immediate(u8 w_bit, u8 s_bit, MemoryReader *reader) {
   return dest;
 }
 
-const char * get_op(u8 op) {
-  if (op == 0b000) {
-    return opcode_instruction[0];
-  }
-  else if (op == 0b101) {
-    return opcode_instruction[1];
-  }
-  else if (op == 0b111) {
-    return opcode_instruction[2];
-  }
-  else if (op == 0b010) {
-    return opcode_instruction[3];
-  }
-  else if (op == 0b011) {
-    return opcode_instruction[4];
-  }
-  else if (op == 0b100) {
-    return opcode_instruction[5];
-  }
-  else if (op == 0b001) {
-    return opcode_instruction[6];
-  }
-  return "";
+static inline const char* get_op(u8 op) {
+  return (op < 8) ? alu_ops[op] : "";
 }
 
 CpuInstruction decode_instruction(u8 opcode, MemoryReader *r) {

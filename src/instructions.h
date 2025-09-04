@@ -64,26 +64,25 @@ struct CpuInstruction {
   i16 address_offset;
 };
 
-const char* segment_register[4] = {
+static const char* segment_register[4] = {
   "es", "cs", "ss", "ds"
 };
 
-const char* register_file[16] = {
+static const char* register_file[16] = {
   "al", "cl", "dl", "bl",
   "ah", "ch", "dh", "bh",
   "ax", "cx", "dx", "bx",
   "sp", "bp", "si", "di",
 };
 
-const char* effective_address[8] = {
+static const char* effective_address[8] = {
   "bx + si", "bx + di", "bp + si", "bp + di",
   "si", "di", "bp", "bx",
 };
 
-const char* opcode_instruction[7] = {
-  "add", "sub", "cmp", "adc", "sbb", "and", "or",
+static const char* alu_ops[8] = {
+  "add", "or", "adc", "sbb", "and", "sub", "xor", "cmp"
 };
-
 
 void print_byte(u8 byte) {
     for (int i = 7; i >= 0; i--) {
