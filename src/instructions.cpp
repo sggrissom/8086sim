@@ -47,6 +47,7 @@ static inline const char* get_op(u8 op) {
 }
 
 CpuInstruction decode_instruction(u8 opcode, MemoryReader *r) {
+  u16 start_ip = (r->ip > 0) ? (u16)(r->ip - 1) : 0;
   u8 bytes[6] = {opcode};
   for (size_t i = 0; i < TABLE_LEN(instruction_table); i++) {
     const CpuInstructionDefinition *d = &instruction_table[i];
@@ -70,7 +71,7 @@ CpuInstruction decode_instruction(u8 opcode, MemoryReader *r) {
     }
     if (opcode_matches) {
       CpuInstruction inst = {
-        .instruction_address = r->ip,
+        .instruction_address = start_ip,
         .type = d->type,
         .operation = d->operation
       };
@@ -158,9 +159,8 @@ CpuInstruction decode_instruction(u8 opcode, MemoryReader *r) {
             inst.source = inst.dest;
             inst.dest = source;
           }
-          return inst;
         }
-        if (inst.rm == 0b110 && inst.mod == 0b00) {
+        else if (inst.rm == 0b110 && inst.mod == 0b00) {
           inst.displacement = (i16)read_u16(r);
         } else {
           inst.dest = effective_address[inst.rm];
@@ -178,9 +178,16 @@ CpuInstruction decode_instruction(u8 opcode, MemoryReader *r) {
         inst.immediate = get_immediate(inst.w_bit, 0, r);
       }
 
+      inst.byte_len = (u8)(r->ip - start_ip);
+      inst.next_ip  = (u16)(start_ip + inst.byte_len);
       return inst;
     }
   }
 
-  return { .operation = "nop" };
+  return {
+    .instruction_address = start_ip,
+    .operation = "nop",
+    .byte_len = 1,
+    .next_ip  = (u16)(start_ip + 1)
+  };
 }

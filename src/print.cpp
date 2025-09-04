@@ -61,18 +61,20 @@ void print_instruction(CpuInstruction inst) {
         print_v_bit_clause(inst);
         break;
       }
-    case ConditionalJump:
-      {
-        i8 jump_data = (i8)inst.address_offset;
-        if (jump_data+2 > 0) {
-          printf("%s $+%d+0\n", inst.operation, jump_data+2);
-        } else if (jump_data+2 == 0) {
-          printf("%s $+0\n", inst.operation);
-        } else {
-          printf("%s $%d+0\n", inst.operation, jump_data+2);
-        }
-        break;
+    case ConditionalJump: {
+      i16 rel = (i8)inst.address_offset;
+      u16 target = (u16)(inst.next_ip + rel);
+      i16 delta  = (i16)(target - inst.instruction_address);
+
+      if (delta > 0) {
+        printf("%s $+%d+0\n", inst.operation, delta);
+      } else if (delta == 0) {
+        printf("%s $+0\n", inst.operation);
+      } else {
+        printf("%s $%d+0\n", inst.operation, delta);
       }
+      break;
+    }
     case Register_Memory:
       {
         if (inst.mod == 0b11) {

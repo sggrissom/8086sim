@@ -62,6 +62,9 @@ struct CpuInstruction {
   u16 immediate;
   const char *effective_address;
   i16 address_offset;
+
+  u8 byte_len;
+  u16 next_ip;
 };
 
 static const char* segment_register[4] = {
