@@ -51,14 +51,11 @@ void print_instruction(CpuInstruction inst) {
         const char * width = inst.w_bit ? "word" : "byte";
         if (inst.displacement) {
           printf("%s %s [%d]", inst.operation, width, inst.displacement);
-        }
-        else if (inst.address_offset != 0) {
+        } else if (inst.address_offset != 0) {
           printf("%s %s [%s + %hd]", inst.operation, width, inst.effective_address, inst.address_offset);
-        }
-        else if (inst.source) {
+        } else if (inst.source) {
           printf("%s %s", inst.operation, inst.source);
-        }
-        else {
+        } else {
           printf("%s %s [%s]", inst.operation, width, inst.effective_address);
         }
         print_v_bit_clause(inst);
@@ -81,7 +78,7 @@ void print_instruction(CpuInstruction inst) {
         if (inst.mod == 0b11) {
           printf("%s %s, %s\n", inst.operation, inst.source, inst.dest);
         } else if (inst.rm == 0b110 && inst.mod == 0b00) {
-          printf("%s %s, [%d]\n", inst.operation, inst.source, inst.immediate);
+          printf("%s %s, [%u]\n", inst.operation, inst.source, (u16)inst.displacement);
         } else if (inst.d_bit == 0b0) {
           printf("%s ", inst.operation);
           print_address(inst);

@@ -35,6 +35,13 @@ u16 get_immediate(u8 w_bit, u8 s_bit, MemoryReader *reader) {
   return dest;
 }
 
+static inline u16 read_u16(MemoryReader* r) {
+  u8 lo, hi;
+  read(r, &lo);
+  read(r, &hi);
+  return (u16)((hi << 8) | lo);
+}
+
 static inline const char* get_op(u8 op) {
   return (op < 8) ? alu_ops[op] : "";
 }
@@ -129,12 +136,7 @@ CpuInstruction decode_instruction(u8 opcode, MemoryReader *r) {
           inst.source = REG(inst.rm, inst.w_bit);
         }
         if (inst.rm == 0b110 && inst.mod == 0b00) {
-          u8 byte;
-          read(r, &byte);
-          i16 dest = (u16)byte;
-          read(r, &byte);
-          dest = ((i8)byte << 8) | dest;
-          inst.displacement = dest;
+          inst.displacement = (i16)read_u16(r);
         }
         if (inst.mod == 0b01) {
           inst.address_offset = get_displacement(0, r);
@@ -159,7 +161,7 @@ CpuInstruction decode_instruction(u8 opcode, MemoryReader *r) {
           return inst;
         }
         if (inst.rm == 0b110 && inst.mod == 0b00) {
-          inst.immediate = get_immediate(inst.w_bit, 0, r);
+          inst.displacement = (i16)read_u16(r);
         } else {
           inst.dest = effective_address[inst.rm];
           if (inst.mod == 0b01) {
