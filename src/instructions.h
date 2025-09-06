@@ -22,6 +22,8 @@ enum InstructionType {
   ConditionalJump,
 };
 
+enum RepPrefix  { RepNone, RepF3, RepF2 };
+
 struct CpuInstructionDefinition {
   InstructionType type;
   BitsLocation op_bits;
@@ -65,6 +67,7 @@ struct CpuInstruction {
 
   u8 byte_len;
   u16 next_ip;
+  u8 rep_prefix;
 };
 
 static const char* segment_register[4] = {

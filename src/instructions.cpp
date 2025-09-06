@@ -48,6 +48,16 @@ static inline const char* get_op(u8 op) {
 
 CpuInstruction decode_instruction(u8 opcode, MemoryReader *r) {
   u16 start_ip = (r->ip > 0) ? (u16)(r->ip - 1) : 0;
+
+  u8 prefix = RepNone;
+  if (opcode == 0b11110011) {
+    prefix = RepF3;
+    read(r, &opcode);
+  } else if (opcode == 0b11110010) {
+    prefix = RepF2;
+    read(r, &opcode);
+  }
+
   u8 bytes[6] = {opcode};
   for (size_t i = 0; i < TABLE_LEN(instruction_table); i++) {
     const CpuInstructionDefinition *d = &instruction_table[i];
@@ -73,8 +83,10 @@ CpuInstruction decode_instruction(u8 opcode, MemoryReader *r) {
       CpuInstruction inst = {
         .instruction_address = start_ip,
         .type = d->type,
-        .operation = d->operation
+        .operation = d->operation,
+        .rep_prefix = prefix,
       };
+
       for (int i = 1; i < d->min_byte_count; ++i) {
         read(r, &bytes[i]);
       }
@@ -183,6 +195,8 @@ CpuInstruction decode_instruction(u8 opcode, MemoryReader *r) {
       return inst;
     }
   }
+
+  print_byte(opcode);
 
   return {
     .instruction_address = start_ip,

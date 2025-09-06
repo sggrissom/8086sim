@@ -23,11 +23,22 @@ void print_v_bit_clause(CpuInstruction inst) {
 
 void print_instruction(CpuInstruction inst) {
   switch (inst.type) {
-    case Solo:
-      {
+    case Solo: {
+      bool is_string =
+        (strcmp(inst.operation, "movs") == 0) ||
+        (strcmp(inst.operation, "cmps") == 0) ||
+        (strcmp(inst.operation, "scas") == 0) ||
+        (strcmp(inst.operation, "lods") == 0) ||
+        (strcmp(inst.operation, "stos") == 0);
+
+      if (is_string) {
+        const char* suffix = (inst.w_bit ? "w" : "b");
+        printf("rep %s%s\n", inst.operation, suffix);
+      } else {
         printf("%s\n", inst.operation);
-        break;
       }
+      break;
+    }
     case Register:
       {
         if (inst.segment_reg) {
