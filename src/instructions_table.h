@@ -629,4 +629,19 @@ CpuInstructionDefinition instruction_table[] = {
     .w_bit={ .byte_count=0, .mask=0b00000001 },
     .s_bit={ .byte_count=0, .mask=0b00000010, .shift=1 }
   },
+  {
+    .type=Call,
+    .operation="call",
+    .min_byte_count=3,
+    .opcode={ .byte_count=0, .match=0b11101000, .mask=0b11111111 }
+  },
+  {
+    .type=Call,
+    .operation="call",
+    .min_byte_count=2,
+    .opcode={ .byte_count=0, .match=0b11111111, .mask=0b11111111 },
+    .pattern={ .byte_count=1, .match=0b00010000, .mask=0b00111000 },
+    .mod={ .byte_count=1, .mask=0b11000000, .shift=6 },
+    .rm={ .byte_count=1, .mask=0b00000111 }
+  },
 };

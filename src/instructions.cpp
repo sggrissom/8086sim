@@ -163,6 +163,25 @@ CpuInstruction decode_instruction(u8 opcode, MemoryReader *r) {
         read(r, &byte);
         inst.address_offset = byte;
       }
+      if (d->type == Call) {
+        if (d->opcode.match == 0b11101000) {
+          inst.address_offset = (i16)read_u16(r);
+        } else {
+          if (inst.mod == 0b11) {
+            inst.source = REG(inst.rm, 1);
+          } else if (inst.rm == 0b110 && inst.mod == 0b00) {
+            inst.displacement = (i16)read_u16(r);
+            inst.effective_address = 0;
+          } else {
+            inst.effective_address = effective_address[inst.rm];
+            if (inst.mod == 0b01) {
+              inst.displacement = get_displacement(0, r);
+            } else if (inst.mod == 0b10) {
+              inst.displacement = get_displacement(1, r);
+            }
+          }
+        }
+      }
       if (inst.type == Register_Memory) {
         if (inst.mod == 0b11) {
           inst.dest = REG(inst.rm, inst.w_bit);

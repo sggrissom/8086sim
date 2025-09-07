@@ -142,6 +142,35 @@ void print_instruction(CpuInstruction inst) {
         }
         break;
       }
+    case Call:
+      {
+        if (inst.address_offset != 0) {
+          u16 target = (u16)(inst.next_ip + inst.address_offset);
+          i16 delta  = (i16)(target - inst.instruction_address);
+          if (delta > 0) {
+            printf("%s $+%d+0\n", inst.operation, delta);
+          } else if (delta == 0) {
+            printf("%s $+0\n", inst.operation);
+          } else {
+            printf("%s $%d+0\n", inst.operation, delta);
+          }
+        } else if (inst.source) {
+          printf("%s %s\n", inst.operation, inst.source);
+        } else if (inst.displacement && inst.effective_address) {
+          if ((i16)inst.displacement > 0) {
+            printf("%s [%s + %d]\n", inst.operation, inst.effective_address, (i16)inst.displacement);
+          } else if ((i16)inst.displacement < 0) {
+            printf("%s [%s - %d]\n", inst.operation, inst.effective_address, -(i16)inst.displacement);
+          } else {
+            printf("%s [%s]\n", inst.operation, inst.effective_address);
+          }
+        } else if (inst.displacement) {
+          printf("%s [%d]\n", inst.operation, (u16)inst.displacement);
+        } else if (inst.effective_address) {
+          printf("%s [%s]\n", inst.operation, inst.effective_address);
+        }
+        break;
+      }
     default:
       break;
   }

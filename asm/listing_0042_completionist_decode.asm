@@ -339,10 +339,10 @@ rep lodsw
 rep stosb
 rep stosw
 
-;call [39201]
-;call [bp - 100]
-;call sp
-;call ax
+call [39201]
+call [bp - 100]
+call sp
+call ax
 
 ;jmp ax
 ;jmp di

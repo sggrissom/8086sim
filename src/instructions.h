@@ -20,6 +20,7 @@ enum InstructionType {
   Memory_Immediate,
   Register_Memory,
   ConditionalJump,
+  Call,
 };
 
 enum RepPrefix  { RepNone, RepF3, RepF2 };
