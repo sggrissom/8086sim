@@ -25,10 +25,86 @@ enum InstructionType {
 
 enum RepPrefix  { RepNone, RepF3, RepF2 };
 
+enum Operation {
+  OP_AAA,
+  OP_AAD,
+  OP_AAM,
+  OP_AAS,
+  OP_ADC,
+  OP_ADD,
+  OP_AND,
+  OP_CALL,
+  OP_CBW,
+  OP_CMP,
+  OP_CMPS,
+  OP_CWD,
+  OP_DAA,
+  OP_DAS,
+  OP_DEC,
+  OP_DIV,
+  OP_IDIV,
+  OP_IMUL,
+  OP_IN,
+  OP_INC,
+  OP_JB,
+  OP_JBE,
+  OP_JCXZ,
+  OP_JE,
+  OP_JL,
+  OP_JLE,
+  OP_JNB,
+  OP_JNBE,
+  OP_JNE,
+  OP_JNL,
+  OP_JNLE,
+  OP_JNO,
+  OP_JNP,
+  OP_JNS,
+  OP_JO,
+  OP_JP,
+  OP_JS,
+  OP_LAHF,
+  OP_LDS,
+  OP_LEA,
+  OP_LES,
+  OP_LODS,
+  OP_LOOP,
+  OP_LOOPNZ,
+  OP_LOOPZ,
+  OP_MOV,
+  OP_MOVS,
+  OP_MUL,
+  OP_NEG,
+  OP_NOP,
+  OP_NOT,
+  OP_OR,
+  OP_OUT,
+  OP_POP,
+  OP_POPF,
+  OP_PUSH,
+  OP_PUSHF,
+  OP_RCL,
+  OP_RCR,
+  OP_ROL,
+  OP_ROR,
+  OP_SAHF,
+  OP_SAR,
+  OP_SBB,
+  OP_SCAS,
+  OP_SHL,
+  OP_SHR,
+  OP_STOS,
+  OP_SUB,
+  OP_TEST,
+  OP_XCHG,
+  OP_XLAT,
+  OP_XOR
+};
+
 struct CpuInstructionDefinition {
   InstructionType type;
   BitsLocation op_bits;
-  const char* operation;
+  Operation operation;
   u8 min_byte_count;
   bool is_accumulator;
   BitsLocation opcode;
@@ -47,7 +123,7 @@ struct CpuInstructionDefinition {
 struct CpuInstruction {
   u16 instruction_address;
   InstructionType type;
-  const char* operation;
+  Operation operation;
 
   const char* source;
   const char* dest;
@@ -90,6 +166,89 @@ static const char* effective_address[8] = {
 static const char* alu_ops[8] = {
   "add", "or", "adc", "sbb", "and", "sub", "xor", "cmp"
 };
+
+static const char* operation_strings[] = {
+  "aaa",
+  "aad",
+  "aam",
+  "aas",
+  "adc",
+  "add",
+  "and",
+  "call",
+  "cbw",
+  "cmp",
+  "cmps",
+  "cwd",
+  "daa",
+  "das",
+  "dec",
+  "div",
+  "idiv",
+  "imul",
+  "in",
+  "inc",
+  "jb",
+  "jbe",
+  "jcxz",
+  "je",
+  "jl",
+  "jle",
+  "jnb",
+  "jnbe",
+  "jne",
+  "jnl",
+  "jnle",
+  "jno",
+  "jnp",
+  "jns",
+  "jo",
+  "jp",
+  "js",
+  "lahf",
+  "lds",
+  "lea",
+  "les",
+  "lods",
+  "loop",
+  "loopnz",
+  "loopz",
+  "mov",
+  "movs",
+  "mul",
+  "neg",
+  "nop",
+  "not",
+  "or",
+  "out",
+  "pop",
+  "popf",
+  "push",
+  "pushf",
+  "rcl",
+  "rcr",
+  "rol",
+  "ror",
+  "sahf",
+  "sar",
+  "sbb",
+  "scas",
+  "shl",
+  "shr",
+  "stos",
+  "sub",
+  "test",
+  "xchg",
+  "xlat",
+  "xor"
+};
+
+static inline const char* operation_to_string(Operation op) {
+  if (op >= 0 && op < TABLE_LEN(operation_strings)) {
+    return operation_strings[op];
+  }
+  return "unknown";
+}
 
 void print_byte(u8 byte) {
     for (int i = 7; i >= 0; i--) {

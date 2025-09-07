@@ -42,8 +42,12 @@ static inline u16 read_u16(MemoryReader* r) {
   return (u16)((hi << 8) | lo);
 }
 
-static inline const char* get_op(u8 op) {
-  return (op < 8) ? alu_ops[op] : "";
+static Operation alu_op_to_enum[8] = {
+  OP_ADD, OP_OR, OP_ADC, OP_SBB, OP_AND, OP_SUB, OP_XOR, OP_CMP
+};
+
+static inline Operation get_op(u8 op) {
+  return (op < 8) ? alu_op_to_enum[op] : OP_ADD;
 }
 
 CpuInstruction decode_instruction(u8 opcode, MemoryReader *r) {
@@ -74,10 +78,7 @@ CpuInstruction decode_instruction(u8 opcode, MemoryReader *r) {
         peek(r, &bytes[d->op_bits.byte_count]);
       }
       u8 op = get_bits(bytes, r, d->op_bits);
-      const char *operation = get_op(op);
-      if (operation == "") {
-        opcode_matches = false;
-      }
+      Operation operation = get_op(op);
     }
     if (opcode_matches) {
       CpuInstruction inst = {
@@ -219,7 +220,7 @@ CpuInstruction decode_instruction(u8 opcode, MemoryReader *r) {
 
   return {
     .instruction_address = start_ip,
-    .operation = "nop",
+    .operation = OP_NOP,
     .byte_len = 1,
     .next_ip  = (u16)(start_ip + 1)
   };

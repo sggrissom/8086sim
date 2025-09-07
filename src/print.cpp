@@ -25,35 +25,35 @@ void print_instruction(CpuInstruction inst) {
   switch (inst.type) {
     case Solo: {
       bool is_string =
-        (strcmp(inst.operation, "movs") == 0) ||
-        (strcmp(inst.operation, "cmps") == 0) ||
-        (strcmp(inst.operation, "scas") == 0) ||
-        (strcmp(inst.operation, "lods") == 0) ||
-        (strcmp(inst.operation, "stos") == 0);
+        (inst.operation == OP_MOVS) ||
+        (inst.operation == OP_CMPS) ||
+        (inst.operation == OP_SCAS) ||
+        (inst.operation == OP_LODS) ||
+        (inst.operation == OP_STOS);
 
       if (is_string) {
         const char* suffix = (inst.w_bit ? "w" : "b");
-        printf("rep %s%s\n", inst.operation, suffix);
+        printf("rep %s%s\n", operation_to_string(inst.operation), suffix);
       } else {
-        printf("%s\n", inst.operation);
+        printf("%s\n", operation_to_string(inst.operation));
       }
       break;
     }
     case Register:
       {
         if (inst.segment_reg) {
-          printf("%s %s\n", inst.operation, inst.segment_reg);
+          printf("%s %s\n", operation_to_string(inst.operation), inst.segment_reg);
         }
         else if (inst.source && inst.is_accumulator) {
           const char * accumulator = inst.w_bit ? "ax" : "al";
           if (inst.d_bit) {
-            printf("%s %s, %s\n", inst.operation, inst.source, accumulator);
+            printf("%s %s, %s\n", operation_to_string(inst.operation), inst.source, accumulator);
           } else {
-            printf("%s %s, %s\n", inst.operation, accumulator, inst.source);
+            printf("%s %s, %s\n", operation_to_string(inst.operation), accumulator, inst.source);
           }
         }
         else if (inst.source) {
-          printf("%s %s\n", inst.operation, inst.source);
+          printf("%s %s\n", operation_to_string(inst.operation), inst.source);
         }
         break;
       }
@@ -61,13 +61,13 @@ void print_instruction(CpuInstruction inst) {
       {
         const char * width = inst.w_bit ? "word" : "byte";
         if (inst.displacement) {
-          printf("%s %s [%d]", inst.operation, width, inst.displacement);
+          printf("%s %s [%d]", operation_to_string(inst.operation), width, inst.displacement);
         } else if (inst.address_offset != 0) {
-          printf("%s %s [%s + %hd]", inst.operation, width, inst.effective_address, inst.address_offset);
+          printf("%s %s [%s + %hd]", operation_to_string(inst.operation), width, inst.effective_address, inst.address_offset);
         } else if (inst.source) {
-          printf("%s %s", inst.operation, inst.source);
+          printf("%s %s", operation_to_string(inst.operation), inst.source);
         } else {
-          printf("%s %s [%s]", inst.operation, width, inst.effective_address);
+          printf("%s %s [%s]", operation_to_string(inst.operation), width, inst.effective_address);
         }
         print_v_bit_clause(inst);
         break;
@@ -78,26 +78,26 @@ void print_instruction(CpuInstruction inst) {
       i16 delta  = (i16)(target - inst.instruction_address);
 
       if (delta > 0) {
-        printf("%s $+%d+0\n", inst.operation, delta);
+        printf("%s $+%d+0\n", operation_to_string(inst.operation), delta);
       } else if (delta == 0) {
-        printf("%s $+0\n", inst.operation);
+        printf("%s $+0\n", operation_to_string(inst.operation));
       } else {
-        printf("%s $%d+0\n", inst.operation, delta);
+        printf("%s $%d+0\n", operation_to_string(inst.operation), delta);
       }
       break;
     }
     case Register_Memory:
       {
         if (inst.mod == 0b11) {
-          printf("%s %s, %s\n", inst.operation, inst.source, inst.dest);
+          printf("%s %s, %s\n", operation_to_string(inst.operation), inst.source, inst.dest);
         } else if (inst.rm == 0b110 && inst.mod == 0b00) {
-          printf("%s %s, [%u]\n", inst.operation, inst.source, (u16)inst.displacement);
+          printf("%s %s, [%u]\n", operation_to_string(inst.operation), inst.source, (u16)inst.displacement);
         } else if (inst.d_bit == 0b0) {
-          printf("%s ", inst.operation);
+          printf("%s ", operation_to_string(inst.operation));
           print_address(inst);
           printf(", %s\n", inst.source);
         } else {
-          printf("%s %s, ", inst.operation, inst.source);
+          printf("%s %s, ", operation_to_string(inst.operation), inst.source);
           print_address(inst);
           printf("\n");
         }
@@ -107,13 +107,13 @@ void print_instruction(CpuInstruction inst) {
       {
         if (inst.rm == 0b110 && inst.mod == 0b00) {
           const char * width = inst.w_bit ? "word" : "byte";
-          printf("%s [%d], %s %d\n", inst.operation, inst.displacement, width, inst.immediate);
+          printf("%s [%d], %s %d\n", operation_to_string(inst.operation), inst.displacement, width, inst.immediate);
         }
         else if (inst.source) {
           if (inst.d_bit) {
-            printf("%s %d, %s\n", inst.operation, inst.immediate, inst.source);
+            printf("%s %d, %s\n", operation_to_string(inst.operation), inst.immediate, inst.source);
           } else {
-            printf("%s %s, %d\n", inst.operation, inst.source, inst.immediate);
+            printf("%s %s, %d\n", operation_to_string(inst.operation), inst.source, inst.immediate);
           }
         }
         else if (inst.effective_address) {
@@ -124,10 +124,10 @@ void print_instruction(CpuInstruction inst) {
             sprintf(source, "[%s]", inst.effective_address);
           }
           const char * width = inst.w_bit ? "word" : "byte";
-          printf("%s %s, %s %d\n", inst.operation, source, width, inst.immediate);
+          printf("%s %s, %s %d\n", operation_to_string(inst.operation), source, width, inst.immediate);
         } else if (inst.is_accumulator) {
           const char * accumulator = inst.w_bit ? "ax" : "al";
-          printf("%s %s, %d\n", inst.operation, accumulator, inst.immediate);
+          printf("%s %s, %d\n", operation_to_string(inst.operation), accumulator, inst.immediate);
         }
         break;
       }
@@ -135,9 +135,9 @@ void print_instruction(CpuInstruction inst) {
       {
         if (inst.is_accumulator) {
           if (inst.d_bit) {
-            printf("%s ax, [%d]\n", inst.operation, inst.immediate);
+            printf("%s ax, [%d]\n", operation_to_string(inst.operation), inst.immediate);
           } else {
-            printf("%s [%d], ax\n", inst.operation, inst.immediate);
+            printf("%s [%d], ax\n", operation_to_string(inst.operation), inst.immediate);
           }
         }
         break;
@@ -148,26 +148,26 @@ void print_instruction(CpuInstruction inst) {
           u16 target = (u16)(inst.next_ip + inst.address_offset);
           i16 delta  = (i16)(target - inst.instruction_address);
           if (delta > 0) {
-            printf("%s $+%d+0\n", inst.operation, delta);
+            printf("%s $+%d+0\n", operation_to_string(inst.operation), delta);
           } else if (delta == 0) {
-            printf("%s $+0\n", inst.operation);
+            printf("%s $+0\n", operation_to_string(inst.operation));
           } else {
-            printf("%s $%d+0\n", inst.operation, delta);
+            printf("%s $%d+0\n", operation_to_string(inst.operation), delta);
           }
         } else if (inst.source) {
-          printf("%s %s\n", inst.operation, inst.source);
+          printf("%s %s\n", operation_to_string(inst.operation), inst.source);
         } else if (inst.displacement && inst.effective_address) {
           if ((i16)inst.displacement > 0) {
-            printf("%s [%s + %d]\n", inst.operation, inst.effective_address, (i16)inst.displacement);
+            printf("%s [%s + %d]\n", operation_to_string(inst.operation), inst.effective_address, (i16)inst.displacement);
           } else if ((i16)inst.displacement < 0) {
-            printf("%s [%s - %d]\n", inst.operation, inst.effective_address, -(i16)inst.displacement);
+            printf("%s [%s - %d]\n", operation_to_string(inst.operation), inst.effective_address, -(i16)inst.displacement);
           } else {
-            printf("%s [%s]\n", inst.operation, inst.effective_address);
+            printf("%s [%s]\n", operation_to_string(inst.operation), inst.effective_address);
           }
         } else if (inst.displacement) {
-          printf("%s [%d]\n", inst.operation, (u16)inst.displacement);
+          printf("%s [%d]\n", operation_to_string(inst.operation), (u16)inst.displacement);
         } else if (inst.effective_address) {
-          printf("%s [%s]\n", inst.operation, inst.effective_address);
+          printf("%s [%s]\n", operation_to_string(inst.operation), inst.effective_address);
         }
         break;
       }
