@@ -336,8 +336,8 @@ rep lodsw
 ; wouldn't compile "rep stds" instructions. It was because it was a misprint in the 8086
 ; manual! It was really just "rep stos", which of course is still in x64, and NASM
 ; assembles it just fine.
-;rep stosb
-;rep stosw
+rep stosb
+rep stosw
 
 ;call [39201]
 ;call [bp - 100]

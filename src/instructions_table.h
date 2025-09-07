@@ -25,6 +25,36 @@ CpuInstructionDefinition instruction_table[] = {
     .opcode={ .byte_count=0, .match=0b10011001 , .mask=0b11111111 },
   },
   {
+    .type=Solo,
+    .operation="movs",
+    .opcode={ .byte_count=0, .match=0b10100100, .mask=0b11111110 },
+    .w_bit={ .byte_count=0, .mask=0b00000001 }
+  },
+  {
+    .type=Solo,
+    .operation="cmps",
+    .opcode={ .byte_count=0, .match=0b10100110, .mask=0b11111110 },
+    .w_bit={ .byte_count=0, .mask=0b00000001 }
+  },
+  {
+    .type=Solo,
+    .operation="scas",
+    .opcode={ .byte_count=0, .match=0b10101110, .mask=0b11111110 },
+    .w_bit={ .byte_count=0, .mask=0b00000001 }
+  },
+  {
+    .type=Solo,
+    .operation="lods",
+    .opcode={ .byte_count=0, .match=0b10101100, .mask=0b11111110 },
+    .w_bit={ .byte_count=0, .mask=0b00000001 }
+  },
+  {
+    .type=Solo,
+    .operation="stos",
+    .opcode={ .byte_count=0, .match=0b10101010, .mask=0b11111110 },
+    .w_bit={ .byte_count=0, .mask=0b00000001 }
+  },
+  {
     .type=Memory,
     .operation="inc",
     .min_byte_count=2,
@@ -598,30 +628,5 @@ CpuInstructionDefinition instruction_table[] = {
     .rm={ .byte_count=1, .mask=0b00000111 },
     .w_bit={ .byte_count=0, .mask=0b00000001 },
     .s_bit={ .byte_count=0, .mask=0b00000010, .shift=1 }
-  },
-  {
-    .type=Solo, .operation="movs",
-    .opcode={ .byte_count=0, .match=0b10100100, .mask=0b11111110 },
-    .w_bit={ .byte_count=0, .mask=0b00000001 }
-  },
-  {
-    .type=Solo, .operation="cmps",
-    .opcode={ .byte_count=0, .match=0b10100110, .mask=0b11111110 },
-    .w_bit={ .byte_count=0, .mask=0b00000001 }
-  },
-  {
-    .type=Solo, .operation="scas",
-    .opcode={ .byte_count=0, .match=0b10101110, .mask=0b11111110 },
-    .w_bit={ .byte_count=0, .mask=0b00000001 }
-  },
-  {
-    .type=Solo, .operation="lods",
-    .opcode={ .byte_count=0, .match=0b10101100, .mask=0b11111110 },
-    .w_bit={ .byte_count=0, .mask=0b00000001 }
-  },
-  {
-    .type=Solo, .operation="stos",
-    .opcode={ .byte_count=0, .match=0b10101010, .mask=0b11111110 },
-    .w_bit={ .byte_count=0, .mask=0b00000001 }
   },
 };
