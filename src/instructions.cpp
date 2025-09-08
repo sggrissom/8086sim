@@ -100,23 +100,33 @@ CpuInstruction decode_instruction(u8 opcode, MemoryReader *r) {
         inst.segment_reg = segment_register[get_bits(bytes, r, d->segment_register)];
       }
       if (d->w_bit.mask != 0 || d->w_bit.overriden) {
-        inst.w_bit = get_bits(bytes, r, d->w_bit);
+        if (get_bits(bytes, r, d->w_bit)) {
+          inst.flags |= INST_FLAG_W_BIT;
+        }
       }
       if (d->d_bit.mask != 0 || d->d_bit.overriden) {
-        inst.d_bit = get_bits(bytes, r, d->d_bit);
+        if (get_bits(bytes, r, d->d_bit)) {
+          inst.flags |= INST_FLAG_D_BIT;
+        }
       }
       if (d->s_bit.mask != 0) {
-        inst.s_bit = get_bits(bytes, r, d->s_bit);
+        if (get_bits(bytes, r, d->s_bit)) {
+          inst.flags |= INST_FLAG_S_BIT;
+        }
       }
       if (d->v_bit.mask != 0) {
-        inst.use_v_bit = true;
-        inst.v_bit = get_bits(bytes, r, d->v_bit);
+        inst.flags |= INST_FLAG_USE_V_BIT;
+        if (get_bits(bytes, r, d->v_bit)) {
+          inst.flags |= INST_FLAG_V_BIT;
+        }
       }
       if (d->z_bit.mask != 0) {
-        inst.z_bit = get_bits(bytes, r, d->z_bit);
+        if (get_bits(bytes, r, d->z_bit)) {
+          inst.flags |= INST_FLAG_Z_BIT;
+        }
       }
       if (d->reg.mask != 0 || d->reg.overriden) {
-        u8 wide_source = d->is_accumulator ? 1 : inst.w_bit;
+        u8 wide_source = (d->flags & FLAG_IS_ACCUMULATOR) ? 1 : GET_W_BIT(inst);
         inst.source = REG(get_bits(bytes, r, d->reg), wide_source);
       }
       if (d->mod.mask != 0) {
@@ -129,11 +139,11 @@ CpuInstruction decode_instruction(u8 opcode, MemoryReader *r) {
 
       if (inst.type == Register_Immediate) {
         if (inst.rm == 0b110 && inst.mod == 0b00) {
-          inst.displacement = get_immediate(inst.w_bit, 0, r);
+          inst.displacement = get_immediate(GET_W_BIT(inst), 0, r);
         }
 
         if (inst.mod == 0b11) {
-          inst.source = REG(inst.rm, inst.w_bit);
+          inst.source = REG(inst.rm, GET_W_BIT(inst));
         }
 
         if (inst.mod == 0b01) {
@@ -142,12 +152,12 @@ CpuInstruction decode_instruction(u8 opcode, MemoryReader *r) {
           inst.displacement = get_displacement(1, r);
         }
 
-        u8 wide_imm = d->reg.overriden ? 0 : inst.w_bit;
-        inst.immediate = get_immediate(wide_imm && !inst.s_bit, inst.s_bit, r);
+        u8 wide_imm = d->reg.overriden ? 0 : GET_W_BIT(inst);
+        inst.immediate = get_immediate(wide_imm && !GET_S_BIT(inst), GET_S_BIT(inst), r);
       }
       if (inst.type == Memory) {
         if (inst.mod == 0b11) {
-          inst.source = REG(inst.rm, inst.w_bit);
+          inst.source = REG(inst.rm, GET_W_BIT(inst));
         }
         if (inst.rm == 0b110 && inst.mod == 0b00) {
           inst.displacement = (i16)read_u16(r);
@@ -185,8 +195,8 @@ CpuInstruction decode_instruction(u8 opcode, MemoryReader *r) {
       }
       if (inst.type == Register_Memory) {
         if (inst.mod == 0b11) {
-          inst.dest = REG(inst.rm, inst.w_bit);
-          if (inst.d_bit == 0) {
+          inst.dest = REG(inst.rm, GET_W_BIT(inst));
+          if (!GET_D_BIT(inst)) {
             const char * source = inst.source;
             inst.source = inst.dest;
             inst.dest = source;
@@ -203,11 +213,11 @@ CpuInstruction decode_instruction(u8 opcode, MemoryReader *r) {
           }
         }
       }
-      if (d->is_accumulator) {
-        inst.is_accumulator = true;
+      if (d->flags & FLAG_IS_ACCUMULATOR) {
+        inst.flags |= INST_FLAG_IS_ACCUMULATOR;
       }
       if (inst.type == Memory_Immediate) {
-        inst.immediate = get_immediate(inst.w_bit, 0, r);
+        inst.immediate = get_immediate(GET_W_BIT(inst), 0, r);
       }
 
       inst.byte_len = (u8)(r->ip - start_ip);

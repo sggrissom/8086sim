@@ -283,7 +283,7 @@ CpuInstructionDefinition instruction_table[] = {
   {
     .type=Register,
     .operation=OP_XCHG,
-    .is_accumulator = true,
+    .flags = FLAG_IS_ACCUMULATOR,
     .opcode={ .byte_count=0, .match=0b10010000, .mask=0b11111000 },
     .reg={ .byte_count=0, .mask=0b00000111 },
     .w_bit={ .overriden=true, .overriden_value = 1 }
@@ -536,7 +536,7 @@ CpuInstructionDefinition instruction_table[] = {
   {
     .type=Register,
     .operation=OP_IN,
-    .is_accumulator=true,
+    .flags = FLAG_IS_ACCUMULATOR,
     .opcode={ .byte_count=0, .match=0b11101100, .mask=0b11111110 },
     .reg={ .overriden=true, .overriden_value = 2 },
     .w_bit={ .byte_count=0, .mask=0b00000001 },
@@ -552,7 +552,7 @@ CpuInstructionDefinition instruction_table[] = {
   {
     .type=Register,
     .operation=OP_OUT,
-    .is_accumulator=true,
+    .flags = FLAG_IS_ACCUMULATOR,
     .opcode={ .byte_count=0, .match=0b11101110, .mask=0b11111110 },
     .reg={ .overriden=true, .overriden_value = 2 },
     .w_bit={ .byte_count=0, .mask=0b00000001 },
@@ -561,7 +561,7 @@ CpuInstructionDefinition instruction_table[] = {
   {
     .type=Memory_Immediate,
     .operation=OP_MOV,
-    .is_accumulator=true,
+    .flags = FLAG_IS_ACCUMULATOR,
     .opcode={ .byte_count=0, .match=0b10100000, .mask=0b11111110 },
     .w_bit={ .byte_count=0, .mask=0b00000001 },
     .d_bit={ .overriden=true, .overriden_value = 1 }
@@ -569,42 +569,42 @@ CpuInstructionDefinition instruction_table[] = {
   {
     .type=Memory_Immediate,
     .operation=OP_MOV,
-    .is_accumulator=true,
+    .flags = FLAG_IS_ACCUMULATOR,
     .opcode={ .byte_count=0, .match=0b10100010, .mask=0b11111110 },
     .w_bit={ .byte_count=0, .mask=0b00000001 },
   },
   {
     .type=Register_Immediate,
     .operation=OP_ADC,
-    .is_accumulator = true,
+    .flags = FLAG_IS_ACCUMULATOR,
     .opcode={ .byte_count=0, .match=0b00010100, .mask=0b11111110 },
     .w_bit={ .byte_count=0, .mask=0b00000001 },
   },
   {
     .type=Register_Immediate,
     .operation=OP_TEST,
-    .is_accumulator = true,
+    .flags = FLAG_IS_ACCUMULATOR,
     .opcode={ .byte_count=0, .match=0b10101000, .mask=0b11111110 },
     .w_bit={ .byte_count=0, .mask=0b00000001 },
   },
   {
     .type=Register_Immediate,
     .op_bits={ .byte_count=0, .mask=0b00111000, .shift=3 },
-    .is_accumulator = true,
+    .flags = FLAG_IS_ACCUMULATOR,
     .opcode={ .byte_count=0, .match=0b00000100, .mask=0b11111110 },
     .w_bit={ .byte_count=0, .mask=0b00000001 },
   },
   {
     .type=Register_Immediate,
     .op_bits={ .byte_count=0, .mask=0b00111000, .shift=3 },
-    .is_accumulator = true,
+    .flags = FLAG_IS_ACCUMULATOR,
     .opcode={ .byte_count=0, .match=0b00000100, .mask=0b11000110 },
     .w_bit={ .byte_count=0, .mask=0b00000001 },
   },
   {
     .type=Register_Immediate,
     .op_bits={ .byte_count=0, .mask=0b00111000, .shift=3 },
-    .is_accumulator = true,
+    .flags = FLAG_IS_ACCUMULATOR,
     .opcode={ .byte_count=0, .match=0b00111100, .mask=0b11111110 },
     .w_bit={ .byte_count=0, .mask=0b00000001 },
   },

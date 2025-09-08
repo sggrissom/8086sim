@@ -25,6 +25,20 @@ enum InstructionType {
 
 enum RepPrefix  { RepNone, RepF3, RepF2 };
 
+enum InstructionDefFlags {
+  FLAG_IS_ACCUMULATOR = 1 << 0,
+};
+
+enum InstructionFlags {
+  INST_FLAG_USE_V_BIT = 1 << 0,
+  INST_FLAG_IS_ACCUMULATOR = 1 << 1,
+  INST_FLAG_W_BIT = 1 << 2,
+  INST_FLAG_D_BIT = 1 << 3,
+  INST_FLAG_S_BIT = 1 << 4,
+  INST_FLAG_V_BIT = 1 << 5,
+  INST_FLAG_Z_BIT = 1 << 6,
+};
+
 enum Operation {
   OP_AAA,
   OP_AAD,
@@ -106,7 +120,7 @@ struct CpuInstructionDefinition {
   BitsLocation op_bits;
   Operation operation;
   u8 min_byte_count;
-  bool is_accumulator;
+  u8 flags;
   BitsLocation opcode;
   BitsLocation pattern;
   BitsLocation segment_register;
@@ -130,13 +144,7 @@ struct CpuInstruction {
   const char* segment_reg;
   u8 rm;
   u8 mod;
-  u8 w_bit;
-  u8 s_bit;
-  u8 d_bit;
-  u8 v_bit;
-  u8 z_bit;
-  u8 use_v_bit;
-  u8 is_accumulator;
+  u8 flags;
   u16 displacement;
   u16 immediate;
   const char *effective_address;
@@ -146,6 +154,12 @@ struct CpuInstruction {
   u16 next_ip;
   u8 rep_prefix;
 };
+
+#define GET_W_BIT(inst) ((inst).flags & INST_FLAG_W_BIT ? 1 : 0)
+#define GET_D_BIT(inst) ((inst).flags & INST_FLAG_D_BIT ? 1 : 0)
+#define GET_S_BIT(inst) ((inst).flags & INST_FLAG_S_BIT ? 1 : 0)
+#define GET_V_BIT(inst) ((inst).flags & INST_FLAG_V_BIT ? 1 : 0)
+#define GET_Z_BIT(inst) ((inst).flags & INST_FLAG_Z_BIT ? 1 : 0)
 
 static const char* segment_register[4] = {
   "es", "cs", "ss", "ds"

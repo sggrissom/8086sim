@@ -10,11 +10,11 @@ void print_address(CpuInstruction inst) {
 }
 
 void print_v_bit_clause(CpuInstruction inst) {
-  if (inst.use_v_bit == 0) {
+  if (!(inst.flags & INST_FLAG_USE_V_BIT)) {
     printf("\n");
     return;
   }
-  if (inst.v_bit == 0) {
+  if (GET_V_BIT(inst) == 0) {
     printf(", 1\n");
   } else {
     printf(", cl\n");
@@ -32,7 +32,7 @@ void print_instruction(CpuInstruction inst) {
         (inst.operation == OP_STOS);
 
       if (is_string) {
-        const char* suffix = (inst.w_bit ? "w" : "b");
+        const char* suffix = (GET_W_BIT(inst) ? "w" : "b");
         printf("rep %s%s\n", operation_to_string(inst.operation), suffix);
       } else {
         printf("%s\n", operation_to_string(inst.operation));
@@ -44,9 +44,9 @@ void print_instruction(CpuInstruction inst) {
         if (inst.segment_reg) {
           printf("%s %s\n", operation_to_string(inst.operation), inst.segment_reg);
         }
-        else if (inst.source && inst.is_accumulator) {
-          const char * accumulator = inst.w_bit ? "ax" : "al";
-          if (inst.d_bit) {
+        else if (inst.source && (inst.flags & INST_FLAG_IS_ACCUMULATOR)) {
+          const char * accumulator = GET_W_BIT(inst) ? "ax" : "al";
+          if (GET_D_BIT(inst)) {
             printf("%s %s, %s\n", operation_to_string(inst.operation), inst.source, accumulator);
           } else {
             printf("%s %s, %s\n", operation_to_string(inst.operation), accumulator, inst.source);
@@ -59,7 +59,7 @@ void print_instruction(CpuInstruction inst) {
       }
     case Memory:
       {
-        const char * width = inst.w_bit ? "word" : "byte";
+        const char * width = GET_W_BIT(inst) ? "word" : "byte";
         if (inst.displacement) {
           printf("%s %s [%d]", operation_to_string(inst.operation), width, inst.displacement);
         } else if (inst.address_offset != 0) {
@@ -92,7 +92,7 @@ void print_instruction(CpuInstruction inst) {
           printf("%s %s, %s\n", operation_to_string(inst.operation), inst.source, inst.dest);
         } else if (inst.rm == 0b110 && inst.mod == 0b00) {
           printf("%s %s, [%u]\n", operation_to_string(inst.operation), inst.source, (u16)inst.displacement);
-        } else if (inst.d_bit == 0b0) {
+        } else if (GET_D_BIT(inst) == 0b0) {
           printf("%s ", operation_to_string(inst.operation));
           print_address(inst);
           printf(", %s\n", inst.source);
@@ -106,11 +106,11 @@ void print_instruction(CpuInstruction inst) {
     case Register_Immediate:
       {
         if (inst.rm == 0b110 && inst.mod == 0b00) {
-          const char * width = inst.w_bit ? "word" : "byte";
+          const char * width = GET_W_BIT(inst) ? "word" : "byte";
           printf("%s [%d], %s %d\n", operation_to_string(inst.operation), inst.displacement, width, inst.immediate);
         }
         else if (inst.source) {
-          if (inst.d_bit) {
+          if (GET_D_BIT(inst)) {
             printf("%s %d, %s\n", operation_to_string(inst.operation), inst.immediate, inst.source);
           } else {
             printf("%s %s, %d\n", operation_to_string(inst.operation), inst.source, inst.immediate);
@@ -123,18 +123,18 @@ void print_instruction(CpuInstruction inst) {
           } else {
             sprintf(source, "[%s]", inst.effective_address);
           }
-          const char * width = inst.w_bit ? "word" : "byte";
+          const char * width = GET_W_BIT(inst) ? "word" : "byte";
           printf("%s %s, %s %d\n", operation_to_string(inst.operation), source, width, inst.immediate);
-        } else if (inst.is_accumulator) {
-          const char * accumulator = inst.w_bit ? "ax" : "al";
+        } else if ((inst.flags & INST_FLAG_IS_ACCUMULATOR)) {
+          const char * accumulator = GET_W_BIT(inst) ? "ax" : "al";
           printf("%s %s, %d\n", operation_to_string(inst.operation), accumulator, inst.immediate);
         }
         break;
       }
     case Memory_Immediate:
       {
-        if (inst.is_accumulator) {
-          if (inst.d_bit) {
+        if ((inst.flags & INST_FLAG_IS_ACCUMULATOR)) {
+          if (GET_D_BIT(inst)) {
             printf("%s ax, [%d]\n", operation_to_string(inst.operation), inst.immediate);
           } else {
             printf("%s [%d], ax\n", operation_to_string(inst.operation), inst.immediate);
