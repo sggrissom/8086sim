@@ -65,23 +65,35 @@ static void handle_mod_rm_displacement(CpuInstruction* inst, const CpuInstructio
   }
 }
 
+const PrefixDefinition * get_matching_prefix(u8 opcode) {
+    for (size_t i = 0; i < TABLE_LEN(prefix_table); i++) {
+      const PrefixDefinition* p = &prefix_table[i];
+      if (opcode == p->opcode) {
+        return p;
+      }
+    }
+    return NULL;
+}
 
 CpuInstruction decode_instruction(u8 opcode, MemoryReader *r) {
   u16 start_ip = (r->ip > 0) ? (u16)(r->ip - 1) : 0;
 
   u8 prefix = RepNone;
   const char* segment_override = NULL;
-  for (size_t i = 0; i < TABLE_LEN(prefix_table); i++) {
-    const PrefixDefinition* p = &prefix_table[i];
-    if (opcode == p->opcode) {
-      if (p->type == PrefixDefinition::PREFIX_SEGMENT) {
-        segment_override = p->segment;
-      } else if (p->type == PrefixDefinition::PREFIX_REP) {
-        prefix = p->rep_type;
-      }
-      read(r, &opcode);
-      break;
+  bool has_lock = false;
+
+  // Process all prefix bytes (can have multiple)
+  const PrefixDefinition* p = get_matching_prefix(opcode);
+  while (p != NULL) {
+    if (p->type == PrefixDefinition::PREFIX_SEGMENT) {
+      segment_override = p->segment;
+    } else if (p->type == PrefixDefinition::PREFIX_REP) {
+      prefix = p->rep_type;
+    } else if (p->type == PrefixDefinition::PREFIX_LOCK) {
+      has_lock = true;
     }
+    read(r, &opcode);
+    p = get_matching_prefix(opcode);
   }
 
   u8 bytes[6] = {opcode};
@@ -108,6 +120,7 @@ CpuInstruction decode_instruction(u8 opcode, MemoryReader *r) {
         .type = d->type,
         .operation = d->operation,
         .segment_override = segment_override,
+        .flags = has_lock ? (u8)INST_FLAG_LOCK : (u8)0,
         .rep_prefix = prefix,
       };
 

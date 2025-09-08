@@ -30,7 +30,7 @@ enum RepPrefix  { RepNone, RepF3, RepF2 };
 
 struct PrefixDefinition {
     u8 opcode;
-    enum { PREFIX_SEGMENT, PREFIX_REP } type;
+    enum { PREFIX_SEGMENT, PREFIX_REP, PREFIX_LOCK } type;
     union {
         const char* segment;
         u8 rep_type;
@@ -46,6 +46,8 @@ static const PrefixDefinition prefix_table[] = {
     // REP prefixes
     { 0b11110010, PrefixDefinition::PREFIX_REP, { .rep_type = RepF2 } },
     { 0b11110011, PrefixDefinition::PREFIX_REP, { .rep_type = RepF3 } },
+    // LOCK prefix
+    { 0b11110000, PrefixDefinition::PREFIX_LOCK, { .rep_type = 0 } },
 };
 
 enum InstructionDefFlags {
@@ -60,6 +62,7 @@ enum InstructionFlags {
   INST_FLAG_S_BIT = 1 << 4,
   INST_FLAG_V_BIT = 1 << 5,
   INST_FLAG_Z_BIT = 1 << 6,
+  INST_FLAG_LOCK = 1 << 7,
 };
 
 enum Operation {
@@ -203,6 +206,7 @@ struct CpuInstruction {
 #define GET_S_BIT(inst) ((inst).flags & INST_FLAG_S_BIT ? 1 : 0)
 #define GET_V_BIT(inst) ((inst).flags & INST_FLAG_V_BIT ? 1 : 0)
 #define GET_Z_BIT(inst) ((inst).flags & INST_FLAG_Z_BIT ? 1 : 0)
+#define HAS_LOCK(inst) ((inst).flags & INST_FLAG_LOCK ? 1 : 0)
 
 static const char* segment_register[4] = {
   "es", "cs", "ss", "ds"

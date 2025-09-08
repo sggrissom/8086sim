@@ -391,8 +391,8 @@ sti
 hlt
 wait
 
-;lock not byte [bp + 9905]
-;lock xchg [100], al
+lock not byte [bp + 9905]
+lock xchg [100], al
 
 mov al, cs:[bx + si]
 mov bx, ds:[bp + di]
@@ -406,7 +406,7 @@ cmp cx, es:[4384]
 test byte cs:[bp - 39], 239
 sbb word cs:[bx + si - 4332], 10328
 
-;lock not byte CS:[bp + 9905]
+lock not byte CS:[bp + 9905]
 
 
 ; NOTE(casey): These were not in the original homework set, but have been added since, as people

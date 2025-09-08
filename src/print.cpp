@@ -5,6 +5,12 @@ static void print_segment_prefix(const char* segment_override) {
     }
 }
 
+static void print_lock_prefix(CpuInstruction inst) {
+    if (HAS_LOCK(inst)) {
+        printf("lock ");
+    }
+}
+
 static void print_memory_operand(const char* base, i16 displacement, const char* segment_override) {
     print_segment_prefix(segment_override);
     if (displacement > 0) {
@@ -84,6 +90,7 @@ void print_instruction(CpuInstruction inst) {
         break;
     }
     case Memory: {
+        print_lock_prefix(inst);
         printf("%s ", operation_to_string(inst.operation));
 
         if (inst.source) {
@@ -109,6 +116,7 @@ void print_instruction(CpuInstruction inst) {
         break;
     }
     case Register_Memory: {
+        print_lock_prefix(inst);
         printf("%s ", operation_to_string(inst.operation));
 
         bool is_test = (inst.operation == OP_TEST);
@@ -152,6 +160,7 @@ void print_instruction(CpuInstruction inst) {
         break;
     }
     case Register_Immediate: {
+        print_lock_prefix(inst);
         printf("%s ", operation_to_string(inst.operation));
 
         bool needs_mem_imm_order = (inst.operation == OP_TEST) || 
