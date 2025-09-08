@@ -59,15 +59,18 @@ void print_instruction(CpuInstruction inst) {
       }
     case Memory:
       {
-        const char * width = GET_W_BIT(inst) ? "word" : "byte";
+        const char * width = GET_W_BIT(inst) ? "word " : "byte ";
+        if (inst.operation == OP_JMP) {
+          width = "";
+        }
         if (inst.displacement) {
-          printf("%s %s [%d]", operation_to_string(inst.operation), width, inst.displacement);
+          printf("%s %s[%d]", operation_to_string(inst.operation), width, inst.displacement);
         } else if (inst.address_offset != 0) {
-          printf("%s %s [%s + %hd]", operation_to_string(inst.operation), width, inst.effective_address, inst.address_offset);
+          printf("%s %s[%s + %hd]", operation_to_string(inst.operation), width, inst.effective_address, inst.address_offset);
         } else if (inst.source) {
           printf("%s %s", operation_to_string(inst.operation), inst.source);
         } else {
-          printf("%s %s [%s]", operation_to_string(inst.operation), width, inst.effective_address);
+          printf("%s %s[%s]", operation_to_string(inst.operation), width, inst.effective_address);
         }
         print_v_bit_clause(inst);
         break;
