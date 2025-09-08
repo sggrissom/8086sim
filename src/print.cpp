@@ -183,6 +183,16 @@ void print_instruction(CpuInstruction inst) {
         }
         break;
       }
+    case Interrupt:
+      {
+        printf("%s %d\n", operation_to_string(inst.operation), inst.immediate);
+        break;
+      }
+    case FarCall:
+      {
+        printf("%s %d:%d\n", operation_to_string(inst.operation), inst.segment, inst.immediate);
+        break;
+      }
     default:
       break;
   }

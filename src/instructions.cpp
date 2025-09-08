@@ -196,6 +196,13 @@ CpuInstruction decode_instruction(u8 opcode, MemoryReader *r) {
       if (d->type == Return) {
         inst.immediate = (u16)((bytes[2] << 8) | bytes[1]);
       }
+      if (d->type == Interrupt) {
+        inst.immediate = (u16)bytes[1];
+      }
+      if (d->type == FarCall) {
+        inst.immediate = (u16)((bytes[2] << 8) | bytes[1]);
+        inst.segment = (u16)((bytes[4] << 8) | bytes[3]);
+      }
       if (inst.type == Register_Memory) {
         if (inst.mod == 0b11) {
           inst.dest = REG(inst.rm, GET_W_BIT(inst));

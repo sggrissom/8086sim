@@ -439,6 +439,11 @@ CpuInstructionDefinition instruction_table[] = {
   },
   {
     .type=Solo,
+    .operation=OP_WAIT,
+    .opcode={ .byte_count=0, .match=0b10011011, .mask=0b11111111 }
+  },
+  {
+    .type=Solo,
     .operation=OP_LAHF,
     .opcode={ .byte_count=0, .match=0b10011111, .mask=0b11111111 }
   },
@@ -620,6 +625,29 @@ CpuInstructionDefinition instruction_table[] = {
     .d_bit={ .byte_count=0, .mask=0b00000010, .shift=1 }
   },
   {
+    .type=FarCall,
+    .operation=OP_CALLF,
+    .min_byte_count=5,
+    .opcode={ .byte_count=0, .match=0b10011010, .mask=0b11111111 }
+  },
+  {
+    .type=FarCall,
+    .operation=OP_JMPF,
+    .min_byte_count=5,
+    .opcode={ .byte_count=0, .match=0b11101010, .mask=0b11111111 }
+  },
+  {
+    .type=Solo,
+    .operation=OP_RETF,
+    .opcode={ .byte_count=0, .match=0b11001011, .mask=0b11111111 }
+  },
+  {
+    .type=Return,
+    .operation=OP_RETF,
+    .min_byte_count=3,
+    .opcode={ .byte_count=0, .match=0b11001010, .mask=0b11111111 }
+  },
+  {
     .type=Register_Immediate,
     .op_bits={ .byte_count=1, .mask=0b00111000, .shift=3 },
     .min_byte_count=2,
@@ -664,5 +692,66 @@ CpuInstructionDefinition instruction_table[] = {
     .operation=OP_RET,
     .min_byte_count=3,
     .opcode={ .byte_count=0, .match=0b11000010, .mask=0b11111111 }
+  },
+  {
+    .type=Solo,
+    .operation=OP_INT3,
+    .opcode={ .byte_count=0, .match=0b11001100, .mask=0b11111111 }
+  },
+  {
+    .type=Solo,
+    .operation=OP_INTO,
+    .opcode={ .byte_count=0, .match=0b11001110, .mask=0b11111111 }
+  },
+  {
+    .type=Solo,
+    .operation=OP_IRET,
+    .opcode={ .byte_count=0, .match=0b11001111, .mask=0b11111111 }
+  },
+  {
+    .type=Interrupt,
+    .operation=OP_INT,
+    .min_byte_count=2,
+    .opcode={ .byte_count=0, .match=0b11001101, .mask=0b11111111 }
+  },
+  {
+    .type=Solo,
+    .operation=OP_CLC,
+    .opcode={ .byte_count=0, .match=0b11111000, .mask=0b11111111 }
+  },
+  {
+    .type=Solo,
+    .operation=OP_CMC,
+    .opcode={ .byte_count=0, .match=0b11110101, .mask=0b11111111 }
+  },
+  {
+    .type=Solo,
+    .operation=OP_STC,
+    .opcode={ .byte_count=0, .match=0b11111001, .mask=0b11111111 }
+  },
+  {
+    .type=Solo,
+    .operation=OP_CLD,
+    .opcode={ .byte_count=0, .match=0b11111100, .mask=0b11111111 }
+  },
+  {
+    .type=Solo,
+    .operation=OP_STD,
+    .opcode={ .byte_count=0, .match=0b11111101, .mask=0b11111111 }
+  },
+  {
+    .type=Solo,
+    .operation=OP_CLI,
+    .opcode={ .byte_count=0, .match=0b11111010, .mask=0b11111111 }
+  },
+  {
+    .type=Solo,
+    .operation=OP_STI,
+    .opcode={ .byte_count=0, .match=0b11111011, .mask=0b11111111 }
+  },
+  {
+    .type=Solo,
+    .operation=OP_HLT,
+    .opcode={ .byte_count=0, .match=0b11110100, .mask=0b11111111 }
   },
 };

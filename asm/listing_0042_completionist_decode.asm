@@ -375,21 +375,21 @@ loopz label
 loopnz label
 jcxz label
     
-;int 13
-;int3
-    
-;into
-;iret
+int 13
+int3
 
-;clc
-;cmc
-;stc
-;cld
-;std
-;cli
-;sti
-;hlt
-;wait
+into
+iret
+
+clc
+cmc
+stc
+cld
+std
+cli
+sti
+hlt
+wait
 
 ;lock not byte [bp + 9905]
 ;lock xchg [100], al
