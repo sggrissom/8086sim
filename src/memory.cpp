@@ -11,6 +11,13 @@ struct MemoryReader {
   u16 ip;
 };
 
+void print_byte(u8 byte) {
+    for (int i = 7; i >= 0; i--) {
+        printf("%c", (byte >> i) & 1 ? '1' : '0');
+    }
+    printf("\n");
+}
+
 MemoryReader load_instruction_memory_from_file(const char* filename) {
   FILE *file = fopen(filename, "rb");
   MemoryReader reader = {};

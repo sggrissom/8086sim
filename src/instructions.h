@@ -328,10 +328,3 @@ static inline const char* operation_to_string(Operation op) {
   }
   return "unknown";
 }
-
-void print_byte(u8 byte) {
-    for (int i = 7; i >= 0; i--) {
-        printf("%c", (byte >> i) & 1 ? '1' : '0');
-    }
-    printf("\n");
-}

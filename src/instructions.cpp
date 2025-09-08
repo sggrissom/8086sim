@@ -198,13 +198,15 @@ CpuInstruction decode_instruction(u8 opcode, MemoryReader *r) {
         }
       }
       if (d->type == ConditionalJump) {
-        u8 byte;
-        read(r, &byte);
-        inst.address_offset = byte;
+        if (d->min_byte_count == 3) {
+          inst.address_offset = (i16)((bytes[2] << 8) | bytes[1]);
+        } else {
+          inst.address_offset = bytes[1];
+        }
       }
       if (d->type == Call) {
-        if (d->opcode.match == 0b11101000) {
-          inst.address_offset = (i16)read_u16(r);
+        if (d->min_byte_count == 3) {
+          inst.address_offset = (i16)((bytes[2] << 8) | bytes[1]);
         } else {
           if (inst.mod == 0b11) {
             inst.source = REG(inst.rm, 1);
@@ -250,7 +252,6 @@ CpuInstruction decode_instruction(u8 opcode, MemoryReader *r) {
     }
   }
 
-  print_byte(opcode);
 
   return {
     .instruction_address = start_ip,

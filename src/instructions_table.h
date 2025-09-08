@@ -335,101 +335,121 @@ CpuInstructionDefinition instruction_table[] = {
   {
     .type=ConditionalJump,
     .operation=OP_JE,
+    .min_byte_count=2,
     .opcode={ .byte_count=0, .match=0b01110100, .mask=0b11111111 }
   },
   {
     .type=ConditionalJump,
     .operation=OP_JL,
+    .min_byte_count=2,
     .opcode={ .byte_count=0, .match=0b01111100, .mask=0b11111111 }
   },
   {
     .type=ConditionalJump,
     .operation=OP_JLE,
+    .min_byte_count=2,
     .opcode={ .byte_count=0, .match=0b01111110, .mask=0b11111111 }
   },
   {
     .type=ConditionalJump,
     .operation=OP_JB,
+    .min_byte_count=2,
     .opcode={ .byte_count=0, .match=0b01110010, .mask=0b11111111 }
   },
   {
     .type=ConditionalJump,
     .operation=OP_JBE,
+    .min_byte_count=2,
     .opcode={ .byte_count=0, .match=0b01110110, .mask=0b11111111 }
   },
   {
     .type=ConditionalJump,
     .operation=OP_JP,
+    .min_byte_count=2,
     .opcode={ .byte_count=0, .match=0b01111010, .mask=0b11111111 }
   },
   {
     .type=ConditionalJump,
     .operation=OP_JO,
+    .min_byte_count=2,
     .opcode={ .byte_count=0, .match=0b01110000, .mask=0b11111111 }
   },
   {
     .type=ConditionalJump,
     .operation=OP_JS,
+    .min_byte_count=2,
     .opcode={ .byte_count=0, .match=0b01111000, .mask=0b11111111 }
   },
   {
     .type=ConditionalJump,
     .operation=OP_JNE,
+    .min_byte_count=2,
     .opcode={ .byte_count=0, .match=0b01110101, .mask=0b11111111 }
   },
   {
     .type=ConditionalJump,
     .operation=OP_JNL,
+    .min_byte_count=2,
     .opcode={ .byte_count=0, .match=0b01111101, .mask=0b11111111 }
   },
   {
     .type=ConditionalJump,
     .operation=OP_JNLE,
+    .min_byte_count=2,
     .opcode={ .byte_count=0, .match=0b01111111, .mask=0b11111111 }
   },
   {
     .type=ConditionalJump,
     .operation=OP_JNB,
+    .min_byte_count=2,
     .opcode={ .byte_count=0, .match=0b01110011, .mask=0b11111111 }
   },
   {
     .type=ConditionalJump,
     .operation=OP_JNBE,
+    .min_byte_count=2,
     .opcode={ .byte_count=0, .match=0b01110111, .mask=0b11111111 }
   },
   {
     .type=ConditionalJump,
     .operation=OP_JNP,
+    .min_byte_count=2,
     .opcode={ .byte_count=0, .match=0b01111011, .mask=0b11111111 }
   },
   {
     .type=ConditionalJump,
     .operation=OP_JNO,
+    .min_byte_count=2,
     .opcode={ .byte_count=0, .match=0b01110001, .mask=0b11111111 }
   },
   {
     .type=ConditionalJump,
     .operation=OP_JNS,
+    .min_byte_count=2,
     .opcode={ .byte_count=0, .match=0b01111001, .mask=0b11111111 }
   },
   {
     .type=ConditionalJump,
     .operation=OP_LOOP,
+    .min_byte_count=2,
     .opcode={ .byte_count=0, .match=0b11100010, .mask=0b11111111 }
   },
   {
     .type=ConditionalJump,
     .operation=OP_LOOPZ,
+    .min_byte_count=2,
     .opcode={ .byte_count=0, .match=0b11100001, .mask=0b11111111 }
   },
   {
     .type=ConditionalJump,
     .operation=OP_LOOPNZ,
+    .min_byte_count=2,
     .opcode={ .byte_count=0, .match=0b11100000, .mask=0b11111111 }
   },
   {
     .type=ConditionalJump,
     .operation=OP_JCXZ,
+    .min_byte_count=2,
     .opcode={ .byte_count=0, .match=0b11100011, .mask=0b11111111 }
   },
   {
@@ -753,5 +773,55 @@ CpuInstructionDefinition instruction_table[] = {
     .type=Solo,
     .operation=OP_HLT,
     .opcode={ .byte_count=0, .match=0b11110100, .mask=0b11111111 }
+  },
+  {
+    .type=Register_Memory,
+    .operation=OP_MOV,
+    .min_byte_count=2,
+    .opcode={ .byte_count=0, .match=0b10001100, .mask=0b11111111 },
+    .segment_register={ .byte_count=1, .mask=0b00111000, .shift=3 },
+    .mod={ .byte_count=1, .mask=0b11000000, .shift=6 },
+    .rm={ .byte_count=1, .mask=0b00000111 },
+    .d_bit={ .overriden=1, .overriden_value=0 }
+  },
+  {
+    .type=Register_Memory,
+    .operation=OP_MOV,
+    .min_byte_count=2,
+    .opcode={ .byte_count=0, .match=0b10001110, .mask=0b11111111 },
+    .segment_register={ .byte_count=1, .mask=0b00111000, .shift=3 },
+    .mod={ .byte_count=1, .mask=0b11000000, .shift=6 },
+    .rm={ .byte_count=1, .mask=0b00000111 },
+    .d_bit={ .overriden=1, .overriden_value=1 }
+  },
+  {
+    .type=ConditionalJump,
+    .operation=OP_JMP,
+    .min_byte_count=3,
+    .opcode={ .byte_count=0, .match=0b11101001, .mask=0b11111111 }
+  },
+  {
+    .type=Call,
+    .operation=OP_CALLF,
+    .min_byte_count=2,
+    .opcode={ .byte_count=0, .match=0b11111111, .mask=0b11111111 },
+    .pattern={ .byte_count=1, .match=0b00011000, .mask=0b00111000 },
+    .mod={ .byte_count=1, .mask=0b11000000, .shift=6 },
+    .rm={ .byte_count=1, .mask=0b00000111 }
+  },
+  {
+    .type=Memory,
+    .operation=OP_JMPF,
+    .min_byte_count=2,
+    .opcode={ .byte_count=0, .match=0b11111111, .mask=0b11111111 },
+    .pattern={ .byte_count=1, .match=0b00101000, .mask=0b00111000 },
+    .mod={ .byte_count=1, .mask=0b11000000, .shift=6 },
+    .rm={ .byte_count=1, .mask=0b00000111 }
+  },
+  {
+    .type=FarCall,
+    .operation=OP_JMPF,
+    .min_byte_count=5,
+    .opcode={ .byte_count=0, .match=0b11101010, .mask=0b11111111 }
   },
 };
