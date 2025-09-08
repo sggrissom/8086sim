@@ -50,16 +50,38 @@ static inline Operation get_op(u8 op) {
   return (op < 8) ? alu_op_to_enum[op] : OP_ADD;
 }
 
+static inline bool is_direct_memory_addressing(u8 mod, u8 rm) {
+  return (mod == 0b00 && rm == 0b110);
+}
+
+static void handle_mod_rm_displacement(CpuInstruction* inst, const CpuInstructionDefinition* d, MemoryReader* r) {
+  if (is_direct_memory_addressing(inst->mod, inst->rm)) {
+    inst->displacement = (i16)read_u16(r);
+    inst->effective_address = NULL;
+  } else if (inst->mod == 0b01) {
+    inst->displacement = get_displacement(0, r);
+  } else if (inst->mod == 0b10) {
+    inst->displacement = get_displacement(1, r);
+  }
+}
+
+
 CpuInstruction decode_instruction(u8 opcode, MemoryReader *r) {
   u16 start_ip = (r->ip > 0) ? (u16)(r->ip - 1) : 0;
 
   u8 prefix = RepNone;
-  if (opcode == 0b11110011) {
-    prefix = RepF3;
-    read(r, &opcode);
-  } else if (opcode == 0b11110010) {
-    prefix = RepF2;
-    read(r, &opcode);
+  const char* segment_override = NULL;
+  for (size_t i = 0; i < TABLE_LEN(prefix_table); i++) {
+    const PrefixDefinition* p = &prefix_table[i];
+    if (opcode == p->opcode) {
+      if (p->type == PrefixDefinition::PREFIX_SEGMENT) {
+        segment_override = p->segment;
+      } else if (p->type == PrefixDefinition::PREFIX_REP) {
+        prefix = p->rep_type;
+      }
+      read(r, &opcode);
+      break;
+    }
   }
 
   u8 bytes[6] = {opcode};
@@ -85,6 +107,7 @@ CpuInstruction decode_instruction(u8 opcode, MemoryReader *r) {
         .instruction_address = start_ip,
         .type = d->type,
         .operation = d->operation,
+        .segment_override = segment_override,
         .rep_prefix = prefix,
       };
 
@@ -138,18 +161,12 @@ CpuInstruction decode_instruction(u8 opcode, MemoryReader *r) {
       }
 
       if (inst.type == Register_Immediate) {
-        if (inst.rm == 0b110 && inst.mod == 0b00) {
-          inst.displacement = get_immediate(GET_W_BIT(inst), 0, r);
-        }
-
         if (inst.mod == 0b11) {
           inst.source = REG(inst.rm, GET_W_BIT(inst));
-        }
-
-        if (inst.mod == 0b01) {
-          inst.displacement = get_displacement(0, r);
-        } else if (inst.mod == 0b10) {
-          inst.displacement = get_displacement(1, r);
+        } else if (is_direct_memory_addressing(inst.mod, inst.rm)) {
+          inst.displacement = get_immediate(GET_W_BIT(inst), 0, r);
+        } else {
+          handle_mod_rm_displacement(&inst, d, r);
         }
 
         u8 wide_imm = d->reg.overriden ? 0 : GET_W_BIT(inst);
@@ -158,14 +175,12 @@ CpuInstruction decode_instruction(u8 opcode, MemoryReader *r) {
       if (inst.type == Memory) {
         if (inst.mod == 0b11) {
           inst.source = REG(inst.rm, GET_W_BIT(inst));
-        }
-        if (inst.rm == 0b110 && inst.mod == 0b00) {
+        } else if (is_direct_memory_addressing(inst.mod, inst.rm)) {
           inst.displacement = (i16)read_u16(r);
-        }
-        if (inst.mod == 0b01) {
+          inst.effective_address = nullptr;
+        } else if (inst.mod == 0b01) {
           inst.address_offset = get_displacement(0, r);
-        }
-        if (inst.mod == 0b10) {
+        } else if (inst.mod == 0b10) {
           inst.address_offset = get_displacement(1, r);
         }
       }
@@ -180,16 +195,9 @@ CpuInstruction decode_instruction(u8 opcode, MemoryReader *r) {
         } else {
           if (inst.mod == 0b11) {
             inst.source = REG(inst.rm, 1);
-          } else if (inst.rm == 0b110 && inst.mod == 0b00) {
-            inst.displacement = (i16)read_u16(r);
-            inst.effective_address = 0;
           } else {
             inst.effective_address = effective_address[inst.rm];
-            if (inst.mod == 0b01) {
-              inst.displacement = get_displacement(0, r);
-            } else if (inst.mod == 0b10) {
-              inst.displacement = get_displacement(1, r);
-            }
+            handle_mod_rm_displacement(&inst, d, r);
           }
         }
       }
@@ -211,16 +219,9 @@ CpuInstruction decode_instruction(u8 opcode, MemoryReader *r) {
             inst.source = inst.dest;
             inst.dest = source;
           }
-        }
-        else if (inst.rm == 0b110 && inst.mod == 0b00) {
-          inst.displacement = (i16)read_u16(r);
         } else {
           inst.dest = effective_address[inst.rm];
-          if (inst.mod == 0b01) {
-            inst.displacement = get_displacement(0, r);
-          } else if (inst.mod == 0b10) {
-            inst.displacement = get_displacement(1, r);
-          }
+          handle_mod_rm_displacement(&inst, d, r);
         }
       }
       if (d->flags & FLAG_IS_ACCUMULATOR) {

@@ -28,6 +28,26 @@ enum InstructionType {
 
 enum RepPrefix  { RepNone, RepF3, RepF2 };
 
+struct PrefixDefinition {
+    u8 opcode;
+    enum { PREFIX_SEGMENT, PREFIX_REP } type;
+    union {
+        const char* segment;
+        u8 rep_type;
+    };
+};
+
+static const PrefixDefinition prefix_table[] = {
+    // Segment override prefixes
+    { 0b00100110, PrefixDefinition::PREFIX_SEGMENT, { .segment = "es" } },
+    { 0b00101110, PrefixDefinition::PREFIX_SEGMENT, { .segment = "cs" } },
+    { 0b00110110, PrefixDefinition::PREFIX_SEGMENT, { .segment = "ss" } },
+    { 0b00111110, PrefixDefinition::PREFIX_SEGMENT, { .segment = "ds" } },
+    // REP prefixes
+    { 0b11110010, PrefixDefinition::PREFIX_REP, { .rep_type = RepF2 } },
+    { 0b11110011, PrefixDefinition::PREFIX_REP, { .rep_type = RepF3 } },
+};
+
 enum InstructionDefFlags {
   FLAG_IS_ACCUMULATOR = 1 << 0,
 };
@@ -163,11 +183,13 @@ struct CpuInstruction {
   const char* source;
   const char* dest;
   const char* segment_reg;
+  const char* segment_override;
   u8 rm;
   u8 mod;
   u8 flags;
   u16 displacement;
   u16 immediate;
+  u16 segment;
   const char *effective_address;
   i16 address_offset;
 

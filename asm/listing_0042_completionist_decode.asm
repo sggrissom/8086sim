@@ -394,17 +394,17 @@ wait
 ;lock not byte [bp + 9905]
 ;lock xchg [100], al
 
-;mov al, cs:[bx + si]
-;mov bx, ds:[bp + di]
-;mov dx, es:[bp]
-;mov ah, ss:[bx + si + 4]
+mov al, cs:[bx + si]
+mov bx, ds:[bp + di]
+mov dx, es:[bp]
+mov ah, ss:[bx + si + 4]
 
-;and ss:[bp + si + 10], ch
-;or ds:[bx + di + 1000], dx
-;xor bx, es:[bp]
-;cmp cx, es:[4384]
-;test byte cs:[bp - 39], 239
-;sbb word cs:[bx + si - 4332], 10328
+and ss:[bp + si + 10], ch
+or ds:[bx + di + 1000], dx
+xor bx, es:[bp]
+cmp cx, es:[4384]
+test byte cs:[bp - 39], 239
+sbb word cs:[bx + si - 4332], 10328
 
 ;lock not byte CS:[bp + 9905]
 
@@ -414,18 +414,18 @@ wait
 ; submitted test cases!
 
 
-;call 123:456
-;jmp 789:34
+call 123:456
+jmp 789:34
 
 ;mov [bx+si+59],es
 
 ;jmp 2620
 ;call 11804
 
-;retf 17556
-;ret 17560
-;retf
-;ret
+retf 17556
+ret 17560
+retf
+ret
 
 ;call [bp+si-0x3a]
 ;call far [bp+si-0x3a]
