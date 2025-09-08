@@ -654,4 +654,15 @@ CpuInstructionDefinition instruction_table[] = {
     .rm={ .byte_count=1, .mask=0b00000111 },
     .w_bit={ .overriden=true, .overriden_value = 1 }
   },
+  {
+    .type=Solo,
+    .operation=OP_RET,
+    .opcode={ .byte_count=0, .match=0b11000011, .mask=0b11111111 }
+  },
+  {
+    .type=Return,
+    .operation=OP_RET,
+    .min_byte_count=3,
+    .opcode={ .byte_count=0, .match=0b11000010, .mask=0b11111111 }
+  },
 };

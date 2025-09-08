@@ -21,6 +21,7 @@ enum InstructionType {
   Register_Memory,
   ConditionalJump,
   Call,
+  Return,
 };
 
 enum RepPrefix  { RepNone, RepF3, RepF2 };
@@ -100,6 +101,7 @@ enum Operation {
   OP_PUSHF,
   OP_RCL,
   OP_RCR,
+  OP_RET,
   OP_ROL,
   OP_ROR,
   OP_SAHF,
@@ -243,6 +245,7 @@ static const char* operation_strings[] = {
   "pushf",
   "rcl",
   "rcr",
+  "ret",
   "rol",
   "ror",
   "sahf",

@@ -349,9 +349,9 @@ jmp di
 jmp [12]
 jmp [4395]
     
-;ret -7
-;ret 500
-;ret
+ret -7
+ret 500
+ret
     
 label:
 je label

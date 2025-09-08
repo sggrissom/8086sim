@@ -174,6 +174,15 @@ void print_instruction(CpuInstruction inst) {
         }
         break;
       }
+    case Return:
+      {
+        if (inst.immediate != 0) {
+          printf("%s %d\n", operation_to_string(inst.operation), (i16)inst.immediate);
+        } else {
+          printf("%s\n", operation_to_string(inst.operation));
+        }
+        break;
+      }
     default:
       break;
   }
