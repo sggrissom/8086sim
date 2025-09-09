@@ -1,4 +1,5 @@
 
+#include "registers.h"
 #include "instructions.h"
 #include "instructions_table.h"
 
@@ -65,14 +66,32 @@ static void handle_mod_rm_displacement(CpuInstruction* inst, const CpuInstructio
   }
 }
 
+static void swap_source_dest_registers(CpuInstruction* inst) {
+  RegisterId temp_reg = inst->source_reg_id;
+  inst->source_reg_id = inst->dest_reg_id;
+  inst->dest_reg_id = temp_reg;
+
+  bool source_has = inst->flags & INST_FLAG_HAS_SOURCE_REG;
+  bool dest_has = inst->flags & INST_FLAG_HAS_DEST_REG;
+  inst->flags &= ~(INST_FLAG_HAS_SOURCE_REG | INST_FLAG_HAS_DEST_REG);
+  if (dest_has) inst->flags |= INST_FLAG_HAS_SOURCE_REG;
+  if (source_has) inst->flags |= INST_FLAG_HAS_DEST_REG;
+
+  bool source_is_reg = inst->flags & INST_FLAG_SOURCE_IS_REGISTER;
+  bool dest_is_reg = inst->flags & INST_FLAG_DEST_IS_REGISTER;
+  inst->flags &= ~(INST_FLAG_SOURCE_IS_REGISTER | INST_FLAG_DEST_IS_REGISTER);
+  if (dest_is_reg) inst->flags |= INST_FLAG_SOURCE_IS_REGISTER;
+  if (source_is_reg) inst->flags |= INST_FLAG_DEST_IS_REGISTER;
+}
+
 const PrefixDefinition * get_matching_prefix(u8 opcode) {
-    for (size_t i = 0; i < TABLE_LEN(prefix_table); i++) {
-      const PrefixDefinition* p = &prefix_table[i];
-      if (opcode == p->opcode) {
-        return p;
-      }
+  for (size_t i = 0; i < TABLE_LEN(prefix_table); i++) {
+    const PrefixDefinition* p = &prefix_table[i];
+    if (opcode == p->opcode) {
+      return p;
     }
-    return NULL;
+  }
+  return NULL;
 }
 
 CpuInstruction decode_instruction(u8 opcode, MemoryReader *r) {
@@ -120,7 +139,10 @@ CpuInstruction decode_instruction(u8 opcode, MemoryReader *r) {
         .type = d->type,
         .operation = d->operation,
         .segment_override = segment_override,
-        .flags = has_lock ? (u8)INST_FLAG_LOCK : (u8)0,
+        .source_reg_id = REG_AL,
+        .dest_reg_id = REG_AL,
+        .segment_reg_id = 255,
+        .flags = has_lock ? (u16)INST_FLAG_LOCK : (u16)0,
         .rep_prefix = prefix,
       };
 
@@ -133,7 +155,7 @@ CpuInstruction decode_instruction(u8 opcode, MemoryReader *r) {
         inst.operation = get_op(op);
       }
       if (d->segment_register.mask != 0) {
-        inst.segment_reg = segment_register[get_bits(bytes, r, d->segment_register)];
+        inst.segment_reg_id = get_bits(bytes, r, d->segment_register);
       }
       if (d->w_bit.mask != 0 || d->w_bit.overriden) {
         if (get_bits(bytes, r, d->w_bit)) {
@@ -163,7 +185,9 @@ CpuInstruction decode_instruction(u8 opcode, MemoryReader *r) {
       }
       if (d->reg.mask != 0 || d->reg.overriden) {
         u8 wide_source = (d->flags & FLAG_IS_ACCUMULATOR) ? 1 : GET_W_BIT(inst);
-        inst.source = REG(get_bits(bytes, r, d->reg), wide_source);
+        u8 reg_bits = get_bits(bytes, r, d->reg);
+        inst.source_reg_id = (RegisterId)(reg_bits + 8 * wide_source);
+        inst.flags |= INST_FLAG_HAS_SOURCE_REG | INST_FLAG_SOURCE_IS_REGISTER;
       }
       if (d->mod.mask != 0) {
         inst.mod = get_bits(bytes, r, d->mod);
@@ -175,7 +199,8 @@ CpuInstruction decode_instruction(u8 opcode, MemoryReader *r) {
 
       if (inst.type == Register_Immediate) {
         if (inst.mod == 0b11) {
-          inst.source = REG(inst.rm, GET_W_BIT(inst));
+          inst.source_reg_id = (RegisterId)(inst.rm + 8 * GET_W_BIT(inst));
+          inst.flags |= INST_FLAG_HAS_SOURCE_REG | INST_FLAG_SOURCE_IS_REGISTER;
         } else if (is_direct_memory_addressing(inst.mod, inst.rm)) {
           inst.displacement = get_immediate(GET_W_BIT(inst), 0, r);
         } else {
@@ -187,7 +212,8 @@ CpuInstruction decode_instruction(u8 opcode, MemoryReader *r) {
       }
       if (inst.type == Memory) {
         if (inst.mod == 0b11) {
-          inst.source = REG(inst.rm, GET_W_BIT(inst));
+          inst.source_reg_id = (RegisterId)(inst.rm + 8 * GET_W_BIT(inst));
+          inst.flags |= INST_FLAG_HAS_SOURCE_REG | INST_FLAG_SOURCE_IS_REGISTER;
         } else if (is_direct_memory_addressing(inst.mod, inst.rm)) {
           inst.displacement = (i16)read_u16(r);
           inst.effective_address = nullptr;
@@ -209,7 +235,8 @@ CpuInstruction decode_instruction(u8 opcode, MemoryReader *r) {
           inst.address_offset = (i16)((bytes[2] << 8) | bytes[1]);
         } else {
           if (inst.mod == 0b11) {
-            inst.source = REG(inst.rm, 1);
+            inst.source_reg_id = (RegisterId)(inst.rm + 8);
+            inst.flags |= INST_FLAG_HAS_SOURCE_REG | INST_FLAG_SOURCE_IS_REGISTER;
           } else {
             inst.effective_address = effective_address[inst.rm];
             handle_mod_rm_displacement(&inst, d, r);
@@ -228,14 +255,12 @@ CpuInstruction decode_instruction(u8 opcode, MemoryReader *r) {
       }
       if (inst.type == Register_Memory) {
         if (inst.mod == 0b11) {
-          inst.dest = REG(inst.rm, GET_W_BIT(inst));
+          inst.dest_reg_id = (RegisterId)(inst.rm + 8 * GET_W_BIT(inst));
+          inst.flags |= INST_FLAG_HAS_DEST_REG | INST_FLAG_DEST_IS_REGISTER;
           if (!GET_D_BIT(inst)) {
-            const char * source = inst.source;
-            inst.source = inst.dest;
-            inst.dest = source;
+            swap_source_dest_registers(&inst);
           }
         } else {
-          inst.dest = effective_address[inst.rm];
           handle_mod_rm_displacement(&inst, d, r);
         }
       }
@@ -255,8 +280,8 @@ CpuInstruction decode_instruction(u8 opcode, MemoryReader *r) {
 
   return {
     .instruction_address = start_ip,
-    .operation = OP_NOP,
-    .byte_len = 1,
-    .next_ip  = (u16)(start_ip + 1)
+      .operation = OP_NOP,
+      .byte_len = 1,
+      .next_ip  = (u16)(start_ip + 1)
   };
 }

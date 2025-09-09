@@ -51,7 +51,7 @@ static void print_width_prefix(bool is_word) {
 }
 
 void print_address(CpuInstruction inst) {
-    print_memory_operand(inst.dest, inst.displacement, inst.segment_override);
+    print_memory_operand(inst.effective_address, inst.displacement, inst.segment_override);
 }
 
 static void print_v_bit_clause(CpuInstruction inst) {
@@ -84,27 +84,30 @@ static void print_memory_with_width(CpuInstruction inst) {
 }
 
 static void print_segment_register_case(CpuInstruction inst) {
+    const char* segment_reg_str = segment_register[inst.segment_reg_id];
+    const char* dest_str = get_register_name_from_id(inst.dest_reg_id);
+
     if (inst.mod == 0b11) {
         if (GET_D_BIT(inst) == 0) {
-            printf("%s, %s\n", inst.dest, inst.segment_reg);
+            printf("%s, %s\n", dest_str, segment_reg_str);
         } else {
-            printf("%s, %s\n", inst.segment_reg, inst.dest);
+            printf("%s, %s\n", segment_reg_str, dest_str);
         }
     } else if (is_direct_addressing(inst)) {
         if (GET_D_BIT(inst) == 0) {
             print_direct_memory((u16)inst.displacement, inst.segment_override);
-            printf(", %s\n", inst.segment_reg);
+            printf(", %s\n", segment_reg_str);
         } else {
-            printf("%s, ", inst.segment_reg);
+            printf("%s, ", segment_reg_str);
             print_direct_memory((u16)inst.displacement, inst.segment_override);
             printf("\n");
         }
     } else {
         if (GET_D_BIT(inst) == 0) {
             print_address(inst);
-            printf(", %s\n", inst.segment_reg);
+            printf(", %s\n", segment_reg_str);
         } else {
-            printf("%s, ", inst.segment_reg);
+            printf("%s, ", segment_reg_str);
             print_address(inst);
             printf("\n");
         }
@@ -113,39 +116,44 @@ static void print_segment_register_case(CpuInstruction inst) {
 
 static void print_register_to_register(CpuInstruction inst) {
     bool is_xchg = (inst.operation == OP_XCHG);
+    const char* source_str = get_register_name_from_id(inst.source_reg_id);
+    const char* dest_str = get_register_name_from_id(inst.dest_reg_id);
+
     if (is_xchg && GET_D_BIT(inst) == 0) {
-        printf("%s, %s\n", inst.dest, inst.source);
+        printf("%s, %s\n", dest_str, source_str);
     } else {
-        printf("%s, %s\n", inst.source, inst.dest);
+        printf("%s, %s\n", source_str, dest_str);
     }
 }
 
 static void print_register_memory_case(CpuInstruction inst) {
     bool is_test = (inst.operation == OP_TEST);
     bool is_xchg = (inst.operation == OP_XCHG);
+    const char* source_str = get_register_name_from_id(inst.source_reg_id);
+    const char* dest_str = get_register_name_from_id(inst.dest_reg_id);
 
     if (is_direct_addressing(inst)) {
         if (is_test) {
             print_direct_memory((u16)inst.displacement, inst.segment_override);
-            printf(", %s\n", inst.source);
+            printf(", %s\n", source_str);
         } else {
-            printf("%s, ", inst.source);
+            printf("%s, ", source_str);
             print_direct_memory((u16)inst.displacement, inst.segment_override);
             printf("\n");
         }
     } else {
         if (is_test) {
             print_address(inst);
-            printf(", %s\n", inst.source);
+            printf(", %s\n", source_str);
         } else if (is_xchg && GET_D_BIT(inst) == 0) {
-            printf("%s, ", inst.dest);
-            print_memory_operand(inst.source, inst.displacement, inst.segment_override);
+            printf("%s, ", dest_str);
+            print_memory_operand(inst.effective_address, inst.displacement, inst.segment_override);
             printf("\n");
         } else if (GET_D_BIT(inst) == 0) {
             print_address(inst);
-            printf(", %s\n", inst.source);
+            printf(", %s\n", source_str);
         } else {
-            printf("%s, ", inst.source);
+            printf("%s, ", source_str);
             print_address(inst);
             printf("\n");
         }
@@ -156,7 +164,7 @@ static void print_register_memory(CpuInstruction inst) {
     print_lock_prefix(inst);
     printf("%s ", operation_to_string(inst.operation));
 
-    if (inst.segment_reg != NULL) {
+    if (inst.segment_reg_id != 255) {
         print_segment_register_case(inst);
     } else if (inst.mod == 0b11) {
         print_register_to_register(inst);
@@ -182,11 +190,12 @@ static void print_memory_immediate(CpuInstruction inst) {
 }
 
 static void print_register_immediate_case(CpuInstruction inst) {
-    if (inst.source) {
+    if (HAS_SOURCE_REG(inst)) {
+        const char* source_str = get_register_name_from_id(inst.source_reg_id);
         if (GET_D_BIT(inst)) {
-            printf("%d, %s\n", inst.immediate, inst.source);
+            printf("%d, %s\n", inst.immediate, source_str);
         } else {
-            printf("%s, ", inst.source);
+            printf("%s, ", source_str);
             print_immediate_value(inst);
             printf("\n");
         }
@@ -224,17 +233,19 @@ void print_instruction(CpuInstruction inst) {
             break;
         }
         case Register: {
-            if (inst.segment_reg) {
-                printf("%s %s\n", operation_to_string(inst.operation), inst.segment_reg);
-            } else if (inst.source && (inst.flags & INST_FLAG_IS_ACCUMULATOR)) {
+            if (inst.segment_reg_id != 255) {
+                printf("%s %s\n", operation_to_string(inst.operation), segment_register[inst.segment_reg_id]);
+            } else if (HAS_SOURCE_REG(inst) && (inst.flags & INST_FLAG_IS_ACCUMULATOR)) {
                 const char* accumulator = GET_W_BIT(inst) ? "ax" : "al";
+                const char* source_str = get_register_name_from_id(inst.source_reg_id);
                 if (GET_D_BIT(inst)) {
-                    printf("%s %s, %s\n", operation_to_string(inst.operation), inst.source, accumulator);
+                    printf("%s %s, %s\n", operation_to_string(inst.operation), source_str, accumulator);
                 } else {
-                    printf("%s %s, %s\n", operation_to_string(inst.operation), accumulator, inst.source);
+                    printf("%s %s, %s\n", operation_to_string(inst.operation), accumulator, source_str);
                 }
-            } else if (inst.source) {
-                printf("%s %s\n", operation_to_string(inst.operation), inst.source);
+            } else if (HAS_SOURCE_REG(inst)) {
+                const char* source_str = get_register_name_from_id(inst.source_reg_id);
+                printf("%s %s\n", operation_to_string(inst.operation), source_str);
             }
             break;
         }
@@ -246,8 +257,9 @@ void print_instruction(CpuInstruction inst) {
                 printf("%s ", operation_to_string(inst.operation));
             }
 
-            if (inst.source) {
-                printf("%s", inst.source);
+            if (HAS_SOURCE_REG(inst)) {
+                const char* source_str = get_register_name_from_id(inst.source_reg_id);
+                printf("%s", source_str);
             } else {
                 if (inst.operation != OP_JMP && inst.operation != OP_JMPF) {
                     print_width_prefix(GET_W_BIT(inst));
@@ -299,12 +311,15 @@ void print_instruction(CpuInstruction inst) {
 
             if (inst.address_offset != 0) {
                 print_relative_jump(inst);
-            } else if (inst.source) {
-                printf("%s", inst.source);
-            } else if (inst.effective_address) {
-                print_memory_operand(inst.effective_address, (i16)inst.displacement, inst.segment_override);
-            } else if (inst.displacement) {
-                print_direct_memory((u16)inst.displacement, inst.segment_override);
+            } else {
+                if (HAS_SOURCE_REG(inst)) {
+                    const char* source_str = get_register_name_from_id(inst.source_reg_id);
+                    printf("%s", source_str);
+                } else if (inst.effective_address) {
+                    print_memory_operand(inst.effective_address, (i16)inst.displacement, inst.segment_override);
+                } else if (inst.displacement) {
+                    print_direct_memory((u16)inst.displacement, inst.segment_override);
+                }
             }
             printf("\n");
             break;

@@ -1,5 +1,4 @@
 
-
 #define REG(reg, w_bit)  (register_file[reg + 8*w_bit])
 #define TABLE_LEN(x)  (sizeof(x)/sizeof(*(x)))
 
@@ -63,6 +62,10 @@ enum InstructionFlags {
   INST_FLAG_V_BIT = 1 << 5,
   INST_FLAG_Z_BIT = 1 << 6,
   INST_FLAG_LOCK = 1 << 7,
+  INST_FLAG_HAS_SOURCE_REG = 1 << 8,
+  INST_FLAG_HAS_DEST_REG = 1 << 9,
+  INST_FLAG_SOURCE_IS_REGISTER = 1 << 10,
+  INST_FLAG_DEST_IS_REGISTER = 1 << 11,
 };
 
 enum Operation {
@@ -183,17 +186,19 @@ struct CpuInstruction {
   InstructionType type;
   Operation operation;
 
-  const char* source;
-  const char* dest;
-  const char* segment_reg;
   const char* segment_override;
+  const char *effective_address;
+
+  RegisterId source_reg_id;
+  RegisterId dest_reg_id;
+  u8 segment_reg_id;
+
   u8 rm;
   u8 mod;
-  u8 flags;
+  u16 flags;
   u16 displacement;
   u16 immediate;
   u16 segment;
-  const char *effective_address;
   i16 address_offset;
 
   u8 byte_len;
@@ -207,17 +212,10 @@ struct CpuInstruction {
 #define GET_V_BIT(inst) ((inst).flags & INST_FLAG_V_BIT ? 1 : 0)
 #define GET_Z_BIT(inst) ((inst).flags & INST_FLAG_Z_BIT ? 1 : 0)
 #define HAS_LOCK(inst) ((inst).flags & INST_FLAG_LOCK ? 1 : 0)
-
-static const char* segment_register[4] = {
-  "es", "cs", "ss", "ds"
-};
-
-static const char* register_file[16] = {
-  "al", "cl", "dl", "bl",
-  "ah", "ch", "dh", "bh",
-  "ax", "cx", "dx", "bx",
-  "sp", "bp", "si", "di",
-};
+#define HAS_SOURCE_REG(inst) ((inst).flags & INST_FLAG_HAS_SOURCE_REG ? 1 : 0)
+#define HAS_DEST_REG(inst) ((inst).flags & INST_FLAG_HAS_DEST_REG ? 1 : 0)
+#define SOURCE_IS_REGISTER(inst) ((inst).flags & INST_FLAG_SOURCE_IS_REGISTER ? 1 : 0)
+#define DEST_IS_REGISTER(inst) ((inst).flags & INST_FLAG_DEST_IS_REGISTER ? 1 : 0)
 
 static const char* effective_address[8] = {
   "bx + si", "bx + di", "bp + si", "bp + di",
